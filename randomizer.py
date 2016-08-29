@@ -38,8 +38,13 @@ class JobStatsObject(TableObject):
         "magic": None,
         }
 
+
 class JobEquipObject(TableObject): pass
-class JobInnatesObject(TableObject): pass
+
+
+class JobInnatesObject(TableObject):
+    def cleanup(self):
+        self.innates |= 0x8
 
 
 class JobPaletteObject(TableObject):
