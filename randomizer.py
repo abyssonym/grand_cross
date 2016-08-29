@@ -78,7 +78,46 @@ class JobStatsObject(TableObject):
         }
 
 
-class JobEquipObject(TableObject): pass
+class JobEquipObject(TableObject):
+    @classmethod
+    def frequency(self, value):
+        if hasattr(self, "_frequency"):
+            return self._frequency[value]
+        self._frequency = {}
+        equip_jobs = [j for j in JobEquipObject.every
+                      if j.equipment != 0xFFFFFFFF]
+        for i in xrange(32):
+            mask = 1 << i
+            counter = 0
+            for j in equip_jobs:
+                if j.equipment & mask:
+                    counter += 1
+            self._frequency[i] = min(float(counter)/len(equip_jobs),
+                                     1 / 3.0)
+        return self.frequency(value)
+
+    def mutate(self):
+        if self.equipment == 0xFFFFFFFF:
+            return
+        for i in xrange(32):
+            mask = 1 << i
+            if random.random() < self.frequency(i):
+                self.equipment ^= mask
+
+    @classmethod
+    def full_cleanup(cls):
+        equippable = 0
+        for j in cls.every:
+            if j.equipment == 0xFFFFFFFF:
+                continue
+            equippable |= j.equipment
+        for i in xrange(32):
+            mask = (1 << i)
+            if not mask & equippable:
+                print i
+                j = random.choice(cls.every)
+                j.equipment |= mask
+        super(JobEquipObject, cls).full_cleanup()
 
 
 class JobCommandObject(TableObject):
