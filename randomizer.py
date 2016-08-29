@@ -19,6 +19,9 @@ caf.close()
 
 
 class JobAbilityObject(TableObject):
+    mutate_attributes = {"ap": (1, 999)}
+    intershuffle_attributes = ["ap"]
+
     @classproperty
     def every(cls):
         if hasattr(cls, "_every"):
@@ -28,6 +31,10 @@ class JobAbilityObject(TableObject):
                                  groupindex=20)
         cls._every.append(mimic)
         return cls.every
+
+    @property
+    def rank(self):
+        return self.ap
 
 class AbilityCountObject(TableObject): pass
 class JobStatsObject(TableObject):
