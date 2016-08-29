@@ -36,7 +36,13 @@ class JobAbilityObject(TableObject):
     def rank(self):
         return self.ap
 
-class AbilityCountObject(TableObject): pass
+
+class AbilityCountObject(TableObject):
+    def cleanup(self):
+        jao = JobAbilityObject.groups[self.index]
+        self.count = len(jao)
+
+
 class JobStatsObject(TableObject):
     mutate_attributes = {
         "strength": None,
@@ -111,6 +117,6 @@ if __name__ == "__main__":
         rewrite_snes_meta("FF5-R", VERSION, megabits=32, lorom=False)
         finish_interface()
         import pdb; pdb.set_trace()
-    except AssertionError, e:
+    except Exception, e:
         print "ERROR: %s" % e
         raw_input("Press Enter to close this program.")
