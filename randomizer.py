@@ -11,6 +11,11 @@ from os import path
 
 VERSION = 1
 ALL_OBJECTS = None
+CRYSTAL_ADDR_FILE = path.join(tblpath, "crystal_list.txt")
+caf = open(CRYSTAL_ADDR_FILE)
+CRYSTAL_ADDRS = [int(line.strip().split()[0], 0x10)
+                 for line in caf.readlines()]
+caf.close()
 
 
 class JobAbilityObject(TableObject):
@@ -55,6 +60,21 @@ class JobPaletteObject(TableObject):
             setattr(self, "color%s" % i, color)
 
 
+def randomize_crystal_shards():
+    f = open(get_outfile(), "r+b")
+    values = []
+    for addr in CRYSTAL_ADDRS:
+        f.seek(addr)
+        value = ord(f.read(1))
+        values.append(value)
+    random.shuffle(values)
+    for addr, v in zip(CRYSTAL_ADDRS, values):
+        f.seek(addr)
+        f.write(chr(v))
+    f.close()
+    return values
+
+
 if __name__ == "__main__":
     try:
         print ('You are using the FF5 '
@@ -74,6 +94,7 @@ if __name__ == "__main__":
         hexify = lambda x: "{0:0>2}".format("%x" % x)
         numify = lambda x: "{0: >3}".format(x)
         minmax = lambda x: (min(x), max(x))
+        randomize_crystal_shards()
         clean_and_write(ALL_OBJECTS)
         rewrite_snes_meta("FF5-R", VERSION, megabits=32, lorom=False)
         finish_interface()
