@@ -81,6 +81,76 @@ class JobStatsObject(TableObject):
 class JobEquipObject(TableObject): pass
 
 
+class JobCommandObject(TableObject):
+    @classproperty
+    def after_order(self):
+        return [JobAbilityObject]
+
+    def randomize(self):
+        if self.index == 6:
+            candidates = [jao.ability for jao in
+                          JobAbilityObject.groups[self.index]
+                          if jao.ability > 0x4D]
+            if candidates:
+                self.commands[1] = random.choice(candidates)
+            return
+
+        if self.index > 20:
+            return
+
+        old_commands = list(self.commands)
+        candidates = [jao.ability for jao in
+                      JobAbilityObject.groups[self.index]
+                      if jao.ability <= 0x4D]
+        if self.index == 20:
+            candidates += [5, 2]
+
+        redundant_groups = [
+                range(0x2C, 0x32),
+                range(0x32, 0x38),
+                range(0x38, 0x3E),
+                range(0x3E, 0x44),
+                ]
+        for i, ability in enumerate(self.commands):
+            if not candidates:
+                break
+            if ability > 0 and random.randint(1, 3) == 3:
+                new_command = random.choice(candidates)
+                if new_command in self.commands:
+                    continue
+                self.commands[i] = new_command
+                for rg in redundant_groups:
+                    if len(set(self.commands) & set(rg)) >= 2:
+                        self.commands[i] = ability
+                        break
+                else:
+                    candidates.remove(new_command)
+            if ability in candidates:
+                candidates.remove(ability)
+        if not set(self.commands) & set([5, 0x2b, 2]):
+            self.commands = old_commands
+        for rg in redundant_groups:
+            if len(set(self.commands) & set(rg)) >= 2:
+                assert False
+
+    def cleanup(self):
+        if self.index < 20:
+            cleaned_commands = [i for i in self.commands if i not in [5, 0x2b, 2]]
+            if 0x2B in self.commands:
+                cleaned_commands.insert(0, 0x2B)
+            if 5 in self.commands:
+                cleaned_commands.insert(0, 5)
+            if 2 in self.commands:
+                cleaned_commands.append(2)
+            if cleaned_commands[3] == 0:
+                cleaned_commands[3] = cleaned_commands[2]
+                cleaned_commands[2] = 0
+            self.commands = cleaned_commands
+        assert len(self.commands) == 4
+        assert self.commands[2] == 0
+        assert self.commands[0] > 0
+
+
 class JobInnatesObject(TableObject):
     def cleanup(self):
         self.innates |= 0x8
@@ -107,12 +177,14 @@ class JobPaletteObject(TableObject):
 def randomize_crystal_shards():
     f = open(get_outfile(), "r+b")
     values = []
-    for addr in CRYSTAL_ADDRS:
+    # galuf has no mime sprite
+    addrs = [a for a in CRYSTAL_ADDRS if a != 0x91baf]
+    for addr in addrs:
         f.seek(addr)
         value = ord(f.read(1))
         values.append(value)
     random.shuffle(values)
-    for addr, v in zip(CRYSTAL_ADDRS, values):
+    for addr, v in zip(addrs, values):
         f.seek(addr)
         f.write(chr(v))
     f.close()
