@@ -36,11 +36,37 @@ class JobAbilityObject(TableObject):
     def rank(self):
         return self.ap
 
+    @classmethod
+    def full_randomize(cls):
+        super(JobAbilityObject, cls).full_randomize()
+        new_groups = defaultdict(list)
+        jaos = list(JobAbilityObject.every)
+        group_indexes = sorted(set([jao.groupindex for jao in jaos]))
+        random.shuffle(jaos)
+        while jaos:
+            valid_groups = [i for i in group_indexes if not new_groups[i]]
+            if not valid_groups:
+                valid_groups = [i for i in group_indexes
+                                if len(new_groups[i]) < 7]
+            index = random.choice(valid_groups)
+            jao = jaos.pop()
+            jao.groupindex = index
+            new_groups[index].append(jao)
+
+    @classmethod
+    def groupsort(cls, jaos):
+        return sorted(jaos, key=lambda jao: (jao.rank, jao.index))
+
 
 class AbilityCountObject(TableObject):
+    @classproperty
+    def after_order(self):
+        return [JobAbilityObject]
+
     def cleanup(self):
         jao = JobAbilityObject.groups[self.index]
         self.count = len(jao)
+        assert self.count <= 7
 
 
 class JobStatsObject(TableObject):
