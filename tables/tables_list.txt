@@ -1,0 +1,7 @@
+# objname tablefile address count grouped
+JobAbilityObject    job_ability_table.txt       1152c0  21      pointed 110000  2
+AbilityCountObject  ability_count_table.txt     1152ea  22
+JobStatsObject      job_stats_table.txt         1156b0  22
+JobEquipObject      job_equip_table.txt         115708  22
+JobCommandObject    job_command_table.txt       115760  22
+JobInnatesObject    job_innates_table.txt       1157b8  22

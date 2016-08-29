@@ -1,0 +1,1 @@
+FF5_JP          d69b2115e17d1cf2cb3590d3f75febb9    tables_list.txt

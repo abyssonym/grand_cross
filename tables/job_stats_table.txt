@@ -1,0 +1,4 @@
+strength,1
+agility,1
+stamina,1
+magic,1
