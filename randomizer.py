@@ -1,6 +1,6 @@
 from randomtools.tablereader import TableObject, get_global_label, tblpath
 from randomtools.utils import (
-    classproperty, mutate_normal, shuffle_bits,
+    classproperty, mutate_normal, shuffle_bits, get_snes_palette_transformer,
     utilrandom as random)
 from randomtools.interface import (
     get_outfile, get_seed, get_flags, run_interface, rewrite_snes_meta,
@@ -35,6 +35,24 @@ class JobStatsObject(TableObject):
 
 class JobEquipObject(TableObject): pass
 class JobInnatesObject(TableObject): pass
+
+
+class JobPaletteObject(TableObject):
+    def mutate(self):
+        # color1 - outline
+        # color2 - sclera
+        # color3 - eye color
+        # color4 - flesh, main color
+        # color5 - hair, main color
+        # color8 - flesh, shading
+        # color9 - hair, shading
+        # color10 - hair, highlight
+        t = get_snes_palette_transformer(middle=True)
+        valid_color_indexes = [0, 6, 7] + range(11, 16)
+        colors = [getattr(self, "color%s" % i) for i in valid_color_indexes]
+        newcolors = t(colors)
+        for i, color in zip(valid_color_indexes, newcolors):
+            setattr(self, "color%s" % i, color)
 
 
 if __name__ == "__main__":

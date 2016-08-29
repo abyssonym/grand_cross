@@ -5,3 +5,4 @@ JobStatsObject      job_stats_table.txt         1156b0  22
 JobEquipObject      job_equip_table.txt         115708  22
 JobCommandObject    job_command_table.txt       115760  22
 JobInnatesObject    job_innates_table.txt       1157b8  22
+JobPaletteObject    job_palette_table.txt       14a3c0  110
