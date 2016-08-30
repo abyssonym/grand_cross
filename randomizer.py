@@ -262,7 +262,7 @@ if __name__ == "__main__":
         minmax = lambda x: (min(x), max(x))
         randomize_crystal_shards()
         clean_and_write(ALL_OBJECTS)
-        rewrite_snes_meta("FF5-R", VERSION, megabits=32, lorom=False)
+        rewrite_snes_meta("FF5-R", VERSION, lorom=False)
         finish_interface()
         import pdb; pdb.set_trace()
     except Exception, e:
