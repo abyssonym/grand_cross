@@ -18,6 +18,16 @@ CRYSTAL_ADDRS = [int(line.strip().split()[0], 0x10)
 caf.close()
 
 
+def randomize_rng():
+    filename = get_outfile()
+    f = open(filename, "r+b")
+    f.seek(0xFEC0)
+    random_numbers = range(0x100)
+    random.shuffle(random_numbers)
+    f.write("".join(map(chr, random_numbers)))
+    f.close()
+
+
 def item_is_buyable(value, magic=False):
     if magic:
         shops = ShopObject.get_magic_shops()
@@ -633,6 +643,7 @@ if __name__ == "__main__":
         numify = lambda x: "{0: >3}".format(x)
         minmax = lambda x: (min(x), max(x))
         randomize_crystal_shards()
+        randomize_rng()
         clean_and_write(ALL_OBJECTS)
         rewrite_snes_meta("FF5-R", VERSION, lorom=False)
         finish_interface()
