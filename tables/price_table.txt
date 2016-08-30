@@ -1,0 +1,2 @@
+exponent,1
+significand,1

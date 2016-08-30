@@ -130,6 +130,108 @@ class MonsterObject(TableObject):
         self.command_immunity &= 0x98
 
 
+class PriceObject(TableObject):
+    mutate_attributes = {"significand": (1, 0xFF)}
+
+    @property
+    def rank(self):
+        return self.price
+
+    @property
+    def price(self):
+        return self.significand * (10**(self.exponent & 0x7))
+
+    def cleanup(self):
+        if (self.exponent & 7) >= 5:
+            return
+        while self.price > 65000:
+            self.significand -= 1
+
+
+class ShopObject(TableObject):
+    @property
+    def rank(self):
+        if self.shop_type == 0:
+            prices = [PriceObject.get(i+0x100).price for i in self.items if i]
+        else:
+            prices = [PriceObject.get(i).price for i in self.items if i]
+        if not prices:
+            return -1
+        return max(prices) * sum(prices) / len(prices)
+
+    @property
+    def pretty_shop_type(self):
+        shop_type = self.shop_type & 0x7
+        types = {0: "Magic", 1: "Weapons", 2: "Armor", 3: "Items",
+                 4: "Armor", 5: "Weapons", 6: "Items"}
+        if shop_type in types:
+            return types[shop_type]
+        return self.shop_type
+
+    def __repr__(self):
+        s = hex(self.index) + " %s %s" % (self.shop_type,
+                                          self.pretty_shop_type)
+        for i in self.items:
+            if i > 0:
+                if self.pretty_shop_type == "Magic":
+                    pi = i + 0x100
+                else:
+                    pi = i
+                s += "\n%x %s" % (i, PriceObject.get(pi).price)
+        return s
+
+    @classmethod
+    def full_randomize(cls):
+        super(ShopObject, cls).full_randomize()
+        for pretty_shop_type in ["Magic", "Weapons", "Armor", "Items"]:
+            shops = [s for s in ShopObject.ranked if s.rank > 0 and
+                     s.pretty_shop_type == pretty_shop_type]
+            itemranks = defaultdict(set)
+            all_items = set([])
+            avg = 0
+            for n, s in enumerate(shops):
+                items = [i for i in s.items if i]
+                itemranks[n] |= set(items)
+                all_items |= set(items)
+                avg += len(items)
+
+            avg /= float(len(shops))
+            for n, s in enumerate(shops):
+                num_items = int(round(mutate_normal(avg, minimum=1,
+                                                    maximum=8)))
+                chosen_items = set([])
+                while len(chosen_items) < num_items:
+                    chosen_rank = mutate_normal(n, minimum=0,
+                                                maximum=len(shops)-1)
+                    candidates = sorted([i for i in itemranks[chosen_rank]
+                                         if i not in chosen_items])
+                    if not candidates:
+                        a = n
+                        b = len(shops) / 2
+                        a, b = min(a, b), max(a, b)
+                        n = random.randint(a, b)
+                        continue
+                    item = random.choice(candidates)
+                    chosen_items.add(item)
+                s.items = sorted(chosen_items)
+                all_items -= chosen_items
+
+            all_items = sorted(all_items)
+            while all_items:
+                item = all_items.pop()
+                candidates = [s for s in shops if len(s.items) < 8]
+                s = random.choice(candidates)
+                s.items.append(item)
+
+    def cleanup(self):
+        while len(self.items) < 8:
+            self.items.append(0)
+        assert len(self.items) == 8
+
+
+class TreasureObject(TableObject): pass
+
+
 class JobAbilityObject(TableObject):
     flag = "a"
     flag_description = "job learned abilities"
