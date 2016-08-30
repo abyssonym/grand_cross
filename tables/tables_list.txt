@@ -1,5 +1,6 @@
 # objname tablefile address count grouped
-MonsterObject       monster_table.txt           100000  368
+MonsterObject       monster_table.txt           100000  384
+DropObject          drop_table.txt              105000  384
 PriceObject         price_table.txt             112a00  384
 ShopObject          shop_table.txt              112d40  64
 TreasureObject      treasure_table.txt          113212  503

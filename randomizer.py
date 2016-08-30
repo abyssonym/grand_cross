@@ -18,6 +18,39 @@ CRYSTAL_ADDRS = [int(line.strip().split()[0], 0x10)
 caf.close()
 
 
+def item_is_buyable(value, magic=False):
+    if magic:
+        shops = ShopObject.get_magic_shops()
+    else:
+        shops = ShopObject.get_nonmagic_shops()
+    for s in shops:
+        if value in s.items:
+            return True
+    else:
+        return False
+
+
+def get_item_similar_price(price=None, magic=False):
+    if magic:
+        shops = ShopObject.get_magic_shops()
+    else:
+        shops = ShopObject.get_nonmagic_shops()
+
+    items = set([])
+    for s in shops:
+        items |= set(s.items)
+
+    if magic:
+        items = sorted([(PriceObject.get(i+0x100).price, i) for i in items])
+    else:
+        items = sorted([(PriceObject.get(i).price, i) for i in items])
+
+    newprice = mutate_normal(price, minimum=1, maximum=65000)
+    items = items[:1] + [i for (p, i) in items if p <= newprice]
+    chosen = items[-1]
+    return chosen
+
+
 class MonsterObject(TableObject):
     flag = "m"
     flag_description = "monster stats"
@@ -43,6 +76,12 @@ class MonsterObject(TableObject):
         ]
 
     @property
+    def drops(self):
+        drops = DropObject.get(self.index)
+        return (drops.steal_rare, drops.steal_common,
+                drops.drop_rare, drops.drop_common)
+
+    @property
     def rank(self):
         factors = [
             "level",
@@ -62,6 +101,8 @@ class MonsterObject(TableObject):
 
     @property
     def intershuffle_valid(self):
+        if not (self.level or self.hp):
+            return False
         return not (self.is_boss or self.level < 10)
 
     @property
@@ -130,6 +171,36 @@ class MonsterObject(TableObject):
         self.command_immunity &= 0x98
 
 
+class DropObject(TableObject):
+    intershuffle_attributes = [
+        ("steal_common", "steal_rare"),
+        ("drop_common", "drop_rare"),
+        ]
+
+    @property
+    def rank(self):
+        return MonsterObject.get(self.index).rank
+
+    @property
+    def intershuffle_valid(self):
+        return MonsterObject.get(self.index).intershuffle_valid
+
+    def mutate(self):
+        for attr in ["steal_common", "steal_rare",
+                      "drop_common", "drop_rare"]:
+            value = getattr(self, attr)
+            if value > 0 and item_is_buyable(value):
+                price = PriceObject.get(value).price
+                setattr(self, attr, get_item_similar_price(price))
+
+        if random.choice([True, False]):
+            if random.choice([True, False]):
+                self.steal_common, self.drop_common = (self.drop_common,
+                                                       self.steal_common)
+            if random.choice([True, False]):
+                self.steal_rare, self.drop_rare = (self.drop_rare,
+                                                   self.steal_rare)
+
 class PriceObject(TableObject):
     mutate_attributes = {"significand": (1, 0xFF)}
 
@@ -167,6 +238,14 @@ class ShopObject(TableObject):
         if shop_type in types:
             return types[shop_type]
         return self.shop_type
+
+    @classmethod
+    def get_magic_shops(cls):
+        return [s for s in cls.every if s.pretty_shop_type == "Magic"]
+
+    @classmethod
+    def get_nonmagic_shops(cls):
+        return [s for s in cls.every if s.pretty_shop_type != "Magic"]
 
     def __repr__(self):
         s = hex(self.index) + " %s %s" % (self.shop_type,
@@ -251,16 +330,9 @@ class TreasureObject(TableObject):
         if self.is_gold:
             return True
         if self.is_magic:
-            shops = [s for s in ShopObject.every
-                     if s.pretty_shop_type == "Magic"]
+            return item_is_buyable(self.value, magic=True)
         if self.is_item:
-            shops = [s for s in ShopObject.every
-                     if s.pretty_shop_type != "Magic"]
-        for s in shops:
-            if self.value in s.items:
-                return True
-        else:
-            return False
+            return item_is_buyable(self.value, magic=False)
 
     @property
     def rank(self):
@@ -303,27 +375,12 @@ class TreasureObject(TableObject):
             return
         chance = random.random()
         price = self.rank
-        if chance <= 0x85:
+        if chance <= 0.85:
             if chance <= 0.70:  # item
-                shops = [s for s in ShopObject.every
-                         if s.pretty_shop_type != "Magic"]
                 self.treasure_type = 0x40
             else:  # magic
-                shops = [s for s in ShopObject.every
-                         if s.pretty_shop_type == "Magic"]
                 self.treasure_type = 0x20
-            items = set([])
-            for s in shops:
-                items |= set(s.items)
-            if self.is_magic:
-                items = sorted([(PriceObject.get(i+0x100).price, i)
-                                for i in items])
-            elif self.is_item:
-                items = sorted([(PriceObject.get(i).price, i) for i in items])
-            newprice = mutate_normal(price, minimum=1, maximum=65000)
-            items = items[:1] + [i for (p, i) in items if p <= newprice]
-            chosen = items[-1]
-            self.value = chosen
+            self.value = get_item_similar_price(price, magic=self.is_magic)
         else:  # gold
             exponent = 0
             while price >= 100:
