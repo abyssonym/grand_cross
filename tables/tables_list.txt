@@ -1,4 +1,5 @@
 # objname tablefile address count grouped
+MonsterObject       monster_table.txt           100000  368
 JobAbilityObject    job_ability_table.txt       1152c0  21      pointed 110000  2
 AbilityCountObject  ability_count_table.txt     1152ea  21
 JobStatsObject      job_stats_table.txt         1156b0  22

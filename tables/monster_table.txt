@@ -1,0 +1,24 @@
+agility,1
+strength,1
+attack_multiplier,1
+evasion,1
+defense,1
+magic,1
+magic_defense,1
+magic_evasion,1
+hp,2
+mp,2
+xp,2
+gp,2
+unknown1,1
+elemental_immunities,1
+status_immunities,3
+absorptions,1
+cant_evade,bit:blue white black time summon song aerial physical
+weaknesses,1
+creature_type,bit:undead archaeotoad creature avis dragon heavy desert human
+command_immunity,bit:u10 u11 u12 catch control u15 u16 scan
+status,3
+sandworm,1
+unknown_index,1
+level,1

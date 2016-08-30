@@ -18,6 +18,118 @@ CRYSTAL_ADDRS = [int(line.strip().split()[0], 0x10)
 caf.close()
 
 
+class MonsterObject(TableObject):
+    flag = "m"
+    flag_description = "monster stats"
+    mutate_attributes = {
+        "agility": None,
+        "strength": None,
+        "attack_multiplier": None,
+        "evasion": None,
+        "defense": None,
+        "magic": None,
+        "magic_defense": None,
+        "magic_evasion": None,
+        "hp": (1, 65535),
+        "mp": (1, 65535),
+        "xp": (1, 65535),
+        "gp": (1, 65535),
+        }
+    intershuffle_attributes = [
+        "agility", "evasion", "defense",
+        "magic_defense", "magic_evasion", "hp", "mp", "xp", "gp",
+        "level", "elemental_immunities", "status_immunities", "absorptions",
+        "cant_evade", "weaknesses",
+        ]
+
+    @property
+    def rank(self):
+        factors = [
+            "level",
+            "hp",
+            ["strength", "magic"],
+            ["defense", "magic_defense"],
+            ["evasion", "magic_evasion"],
+            ]
+        rank = 1
+        for factor in factors:
+            if not isinstance(factor, list):
+                factor = [factor]
+            factor = [getattr(self, attr) for attr in factor]
+            factor = max(factor + [1])
+            rank *= factor
+        return rank
+
+    @property
+    def intershuffle_valid(self):
+        return not (self.is_boss or self.level < 10)
+
+    @property
+    def is_boss(self):
+        return self.get_bit("heavy") or (
+            self.get_bit("control") and self.get_bit("catch"))
+
+    def get_bit_width(self, attr):
+        for (a, width, _) in self.specs.attributes:
+            if a == attr:
+                break
+        else:
+            raise Exception("Bit width indeterminate.")
+        return width * 8
+
+    def bit_shuffle(self, attr):
+        shuffled = shuffle_bits(getattr(self, attr),
+                                size=self.get_bit_width(attr))
+        setattr(self, attr, shuffled)
+
+    def bit_random_add(self, attr):
+        size = self.get_bit_width(attr)
+        while random.choice([True, False]):
+            mask = 1 << random.randint(0, size-1)
+            value = getattr(self, attr)
+            if value & mask:
+                break
+            setattr(self, attr, value | mask)
+
+    def bit_random_remove(self, attr):
+        size = self.get_bit_width(attr)
+        while random.choice([True, False]):
+            mask = 1 << random.randint(0, size-1)
+            mask = mask ^ ((2**size)-1)
+            value = getattr(self, attr)
+            if value == value & mask:
+                break
+            setattr(self, attr, value & mask)
+
+    def mutate(self):
+        oldstats = {}
+        for key in self.mutate_attributes:
+            oldstats[key] = getattr(self, key)
+        super(MonsterObject, self).mutate()
+        if self.is_boss:
+            for (attr, oldval) in oldstats.items():
+                if getattr(self, attr) < oldval:
+                    setattr(self, attr, oldval)
+        for attr in ["elemental_immunities", "status_immunities",
+                "absorptions", "weaknesses"]:
+            if not self.is_boss:
+                self.bit_shuffle(attr)
+            else:
+                self.bit_random_add(attr)
+        if not self.is_boss:
+            self.bit_shuffle("cant_evade")
+            self.bit_random_add("cant_evade")
+        self.bit_random_remove("cant_evade")
+        self.bit_random_add("status")
+        self.bit_random_add("command_immunity")
+
+    def cleanup(self):
+        self.status = self.status & (self.status ^ self.status_immunities)
+        self.elemental_immunities = self.elemental_immunities & (
+            self.elemental_immunities ^ (self.absorptions | self.weaknesses))
+        self.command_immunity &= 0x98
+
+
 class JobAbilityObject(TableObject):
     flag = "a"
     flag_description = "job learned abilities"
