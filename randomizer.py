@@ -215,6 +215,7 @@ class MonsterObject(TableObject):
 
 
 class DropObject(TableObject):
+    flag = "t"
     intershuffle_attributes = [
         ("steal_common", "steal_rare"),
         ("drop_common", "drop_rare"),
@@ -245,6 +246,7 @@ class DropObject(TableObject):
                                                    self.steal_rare)
 
 class PriceObject(TableObject):
+    flag = "p"
     mutate_attributes = {"significand": (1, 0xFF)}
 
     @property
@@ -263,6 +265,9 @@ class PriceObject(TableObject):
 
 
 class ShopObject(TableObject):
+    flag = "p"
+    flag_description = "shops"
+
     @property
     def rank(self):
         if self.shop_type == 0:
@@ -352,6 +357,8 @@ class ShopObject(TableObject):
 
 
 class TreasureObject(TableObject):
+    flag = "t"
+    flag_description = "treasure"
     intershuffle_attributes = [("treasure_type", "value")]
 
     @property
@@ -666,7 +673,7 @@ def randomize_crystal_shards():
 
 if __name__ == "__main__":
     try:
-        print ('You are using the FF5 '
+        print ('You are using the FF5 "Grand Cross" '
                'randomizer version %s.' % VERSION)
         ALL_OBJECTS = [g for g in globals().values()
                        if isinstance(g, type) and issubclass(g, TableObject)
@@ -678,9 +685,8 @@ if __name__ == "__main__":
         randomize_crystal_shards()
         randomize_rng()
         clean_and_write(ALL_OBJECTS)
-        rewrite_snes_meta("FF5-R", VERSION, lorom=False)
+        rewrite_snes_meta("FF5-GC", VERSION, lorom=False)
         finish_interface()
-        import pdb; pdb.set_trace()
     except Exception, e:
         print "ERROR: %s" % e
         raw_input("Press Enter to close this program.")
