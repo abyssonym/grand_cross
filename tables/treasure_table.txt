@@ -1,1 +1,2 @@
-data,2
+treasure_type,1
+value,1

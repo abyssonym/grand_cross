@@ -229,7 +229,108 @@ class ShopObject(TableObject):
         assert len(self.items) == 8
 
 
-class TreasureObject(TableObject): pass
+class TreasureObject(TableObject):
+    intershuffle_attributes = [("treasure_type", "value")]
+
+    @property
+    def intershuffle_valid(self):
+        if self.is_monster:
+            return False
+        if self.treasure_type & 0x18:
+            return False
+        if self.is_gold and self.treasure_type & 0x7 > 4:
+            return False
+        if bin(self.treasure_type & 0xE0).count("1") > 1:
+            return False
+        return True
+
+    @property
+    def mutate_valid(self):
+        if not self.intershuffle_valid:
+            return False
+        if self.is_gold:
+            return True
+        if self.is_magic:
+            shops = [s for s in ShopObject.every
+                     if s.pretty_shop_type == "Magic"]
+        if self.is_item:
+            shops = [s for s in ShopObject.every
+                     if s.pretty_shop_type != "Magic"]
+        for s in shops:
+            if self.value in s.items:
+                return True
+        else:
+            return False
+
+    @property
+    def rank(self):
+        if not self.intershuffle_valid:
+            return -1
+        if self.is_magic:
+            price = PriceObject.get(self.value + 0x100).price
+        elif self.is_item:
+            price = PriceObject.get(self.value).price
+        else:
+            price = self.value * (10**(self.treasure_type & 0x7))
+        if not self.mutate_valid:
+            price += 60000
+        return price
+
+    @property
+    def is_monster(self):
+        return self.treasure_type & 0x80
+
+    @property
+    def is_item(self):
+        return not self.is_monster and self.treasure_type & 0x40
+
+    @property
+    def is_magic(self):
+        return self.treasure_type & 0x20 and not self.treasure_type & 0xC0
+
+    @property
+    def is_gold(self):
+        return not self.treasure_type & 0xE0
+
+    def cleanup(self):
+        return
+        print hex(self.index), hex(self.pointer)
+        assert not ((self.is_monster and (self.is_item or self.is_gold))
+                    or (self.is_item and self.is_gold))
+
+    def mutate(self):
+        if not self.mutate_valid:
+            return
+        chance = random.random()
+        price = self.rank
+        if chance <= 0x85:
+            if chance <= 0.70:  # item
+                shops = [s for s in ShopObject.every
+                         if s.pretty_shop_type != "Magic"]
+                self.treasure_type = 0x40
+            else:  # magic
+                shops = [s for s in ShopObject.every
+                         if s.pretty_shop_type == "Magic"]
+                self.treasure_type = 0x20
+            items = set([])
+            for s in shops:
+                items |= set(s.items)
+            if self.is_magic:
+                items = sorted([(PriceObject.get(i+0x100).price, i)
+                                for i in items])
+            elif self.is_item:
+                items = sorted([(PriceObject.get(i).price, i) for i in items])
+            newprice = mutate_normal(price, minimum=1, maximum=65000)
+            items = items[:1] + [i for (p, i) in items if p <= newprice]
+            chosen = items[-1]
+            self.value = chosen
+        else:  # gold
+            exponent = 0
+            while price >= 100:
+                price /= 10
+                exponent += 1
+            self.treasure_type = exponent
+            self.value = price
 
 
 class JobAbilityObject(TableObject):
