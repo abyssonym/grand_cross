@@ -19,6 +19,8 @@ caf.close()
 
 
 class JobAbilityObject(TableObject):
+    flag = "a"
+    flag_description = "job learned abilities"
     mutate_attributes = {"ap": (1, 999)}
     intershuffle_attributes = ["ap"]
 
@@ -70,6 +72,8 @@ class AbilityCountObject(TableObject):
 
 
 class JobStatsObject(TableObject):
+    flag = "s"
+    flag_description = "job stats"
     mutate_attributes = {
         "strength": None,
         "agility": None,
@@ -79,6 +83,9 @@ class JobStatsObject(TableObject):
 
 
 class JobEquipObject(TableObject):
+    flag = "q"
+    flag_description = "job equippable items"
+
     @classmethod
     def frequency(self, value):
         if hasattr(self, "_frequency"):
@@ -114,13 +121,15 @@ class JobEquipObject(TableObject):
         for i in xrange(32):
             mask = (1 << i)
             if not mask & equippable:
-                print i
                 j = random.choice(cls.every)
                 j.equipment |= mask
         super(JobEquipObject, cls).full_cleanup()
 
 
 class JobCommandObject(TableObject):
+    flag = "b"
+    flag_description = "job base commands"
+
     @classproperty
     def after_order(self):
         return [JobAbilityObject]
@@ -191,11 +200,19 @@ class JobCommandObject(TableObject):
 
 
 class JobInnatesObject(TableObject):
+    # this flag stuff is a hack
+    # because I'm too lazy to make a way to add flags manually
+    flag = "s"
+    flag_description = "jobs obtained from crystal shards"
+
     def cleanup(self):
         self.innates |= 0x8
 
 
 class JobPaletteObject(TableObject):
+    flag = "c"
+    flag_description = "job outfit colors"
+
     def mutate(self):
         # color1 - outline
         # color2 - sclera
@@ -214,6 +231,8 @@ class JobPaletteObject(TableObject):
 
 
 def randomize_crystal_shards():
+    if "s" not in get_flags():
+        return
     f = open(get_outfile(), "r+b")
     values = []
     # galuf has no mime sprite
@@ -238,14 +257,6 @@ if __name__ == "__main__":
                        if isinstance(g, type) and issubclass(g, TableObject)
                        and g not in [TableObject]]
         run_interface(ALL_OBJECTS, snes=True)
-        '''
-        mimic = JobAbilityObject.groups[20]
-        knight = JobAbilityObject.groups[0]
-        for ja in mimic:
-            ja.groupindex = 0
-        for ja in knight:
-            ja.groupindex = 20
-        '''
         hexify = lambda x: "{0:0>2}".format("%x" % x)
         numify = lambda x: "{0: >3}".format(x)
         minmax = lambda x: (min(x), max(x))
