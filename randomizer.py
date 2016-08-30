@@ -18,6 +18,24 @@ CRYSTAL_ADDRS = [int(line.strip().split()[0], 0x10)
 caf.close()
 
 
+def divisibility_rank(level):
+    scores = {2: 1000,
+              3: 10,
+              4: 100,
+              5: 10000}
+    remaining = scores.keys()
+    rank = 0
+    halves = 0
+    while remaining and level > 0:
+        for divisor in list(remaining):
+            if not level % divisor:
+                rank += (scores[divisor] * (0.5**halves))
+                remaining.remove(divisor)
+        halves += 1
+        level /= 2
+    return rank
+
+
 def randomize_rng():
     filename = get_outfile()
     f = open(filename, "r+b")
@@ -161,6 +179,21 @@ class MonsterObject(TableObject):
             for (attr, oldval) in oldstats.items():
                 if getattr(self, attr) < oldval:
                     setattr(self, attr, oldval)
+
+        if 1 <= self.level <= 99:
+            new_level = mutate_normal(self.level, minimum=1, maximum=99)
+            old_divisibility = divisibility_rank(self.level)
+            new_divisibility = divisibility_rank(new_level)
+            if new_divisibility < old_divisibility:
+                if not self.is_boss:
+                    self.level = new_level
+                else:
+                    difference = float(new_level) / self.level
+                    if random.random() < difference:
+                        self.level = new_level
+            elif not self.is_boss and random.choice([True, False]):
+                self.level = new_level
+
         for attr in ["elemental_immunities", "status_immunities",
                 "absorptions", "weaknesses"]:
             if not self.is_boss:
