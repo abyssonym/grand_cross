@@ -314,7 +314,7 @@ class JobCommandObject(TableObject):
 class JobInnatesObject(TableObject):
     # this flag stuff is a hack
     # because I'm too lazy to make a way to add flags manually
-    flag = "s"
+    flag = "y"
     flag_description = "jobs obtained from crystal shards"
 
     def cleanup(self):
@@ -343,7 +343,7 @@ class JobPaletteObject(TableObject):
 
 
 def randomize_crystal_shards():
-    if "s" not in get_flags():
+    if "y" not in get_flags():
         return
     f = open(get_outfile(), "r+b")
     values = []
