@@ -1,0 +1,38 @@
+ファイナルファンタジーV ランダマイザ
+バージョン: 1
+日: August 30, 2016
+ダウンロード:
+    https://github.com/abyssonym/grand_cross/archive/master.zip
+連絡先:
+    https://twitter.com/abyssonym
+    https://www.twitch.tv/abyssonym
+
+FF5のROMイメージが必要です。正しいROMはこのハッシュです。日本語版です。
+    MD5 - d69b2115e17d1cf2cb3590d3f75febb9
+
+オプション
+    a  ジョブのアビリティー
+    b  ジョブのコマンド
+    c  ジョブの色
+    m  敵のステータス
+    p  ショップ
+    q  ジョブの使用可能な武器
+    s  ジョブのステータス
+    t  宝
+    y  クリスタルのジョブ
+
+他の作品
+    日本語版は互換性ある
+        ファイナルファンタジータクティクス
+            https://github.com/abyssonym/rumble_chaos_crashdown/archive/master.zip
+        クロノ・トリガー
+            https://github.com/abyssonym/eternalnightmare/archive/master.zip
+        ファイナルファンタジーUSA ミスティッククエスト
+            https://github.com/abyssonym/terriblesecret/archive/master.zip
+        スーパーマリオRPG
+            https://github.com/abyssonym/smrpg_gbarp/archive/master.zip
+    日本語版は互換性ない
+        ファイナルファンタジーVI
+            https://github.com/abyssonym/beyondchaos/archive/master.zip
+        ブレス オブ ファイアII 使命の子
+            https://github.com/abyssonym/painsong/archive/master.zip
