@@ -666,18 +666,34 @@ class JobPaletteObject(TableObject):
 def randomize_crystal_shards():
     if "y" not in get_flags():
         return
-    f = open(get_outfile(), "r+b")
+
+    FREELANCER, MIME = 0x84fc3, 0x91baf
+
+    def map_crystal_job(value):
+        return (7-(value%8)) + ((value/8)*8)
+
+    def map_job_crystal(value):
+        crystals = [c for c in range(24) if map_crystal_job(c) == value]
+        assert len(crystals) == 1
+        return crystals[0]
+
     values = []
     # galuf has no mime sprite
-    addrs = [a for a in CRYSTAL_ADDRS if a != 0x91baf]
-    for addr in addrs:
+    addrs = [a for a in CRYSTAL_ADDRS if a not in [FREELANCER, MIME]]
+    assert len(addrs) == 20
+    f = open(get_outfile(), "r+b")
+    start_candidates = [j.index for j in JobCommandObject.every
+                        if j.commands[0] == 5 and j.index < 20]
+    start_choice = random.choice(start_candidates)
+    f.seek(FREELANCER)
+    f.write(chr(map_job_crystal(start_choice)))
+    remaining = [j.index for j in JobCommandObject.every
+                 if j.index != 20 and j.index != start_choice]
+    random.shuffle(remaining)
+    assert len(addrs) == len(remaining) == 20
+    for addr, j in zip(addrs, remaining):
         f.seek(addr)
-        value = ord(f.read(1))
-        values.append(value)
-    random.shuffle(values)
-    for addr, v in zip(addrs, values):
-        f.seek(addr)
-        f.write(chr(v))
+        f.write(chr(map_job_crystal(j)))
     f.close()
     return values
 
