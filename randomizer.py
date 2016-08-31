@@ -209,6 +209,9 @@ class MonsterObject(TableObject):
 
     def cleanup(self):
         self.status = self.status & (self.status ^ self.status_immunities)
+        if self.status & (1 << 17) and self.index not in [0x159, 0x14e, 0x14f]:
+            # necrophobia invulnerability
+            self.status ^= (1 << 17)
         self.elemental_immunities = self.elemental_immunities & (
             self.elemental_immunities ^ (self.absorptions | self.weaknesses))
         self.command_immunity &= 0x98
