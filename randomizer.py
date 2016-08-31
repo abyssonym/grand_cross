@@ -9,7 +9,7 @@ from collections import defaultdict
 from os import path
 
 
-VERSION = 1
+VERSION = 2
 ALL_OBJECTS = None
 CRYSTAL_ADDR_FILE = path.join(tblpath, "crystal_list.txt")
 caf = open(CRYSTAL_ADDR_FILE)
@@ -492,7 +492,9 @@ class JobAbilityObject(TableObject):
 class AbilityCountObject(TableObject):
     @classproperty
     def after_order(self):
-        return [JobAbilityObject]
+        if 'a' in get_flags():
+            return [JobAbilityObject]
+        return []
 
     def cleanup(self):
         jao = JobAbilityObject.groups[self.index]
@@ -561,7 +563,9 @@ class JobCommandObject(TableObject):
 
     @classproperty
     def after_order(self):
-        return [JobAbilityObject]
+        if 'a' in get_flags():
+            return [JobAbilityObject]
+        return []
 
     def randomize(self):
         if self.index == 6:
