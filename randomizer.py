@@ -151,18 +151,18 @@ class MonsterObject(TableObject):
                                 size=self.get_bit_width(attr))
         setattr(self, attr, shuffled)
 
-    def bit_random_add(self, attr):
+    def bit_random_add(self, attr, rate=0.5):
         size = self.get_bit_width(attr)
-        while random.choice([True, False]):
+        while random.random() <= rate:
             mask = 1 << random.randint(0, size-1)
             value = getattr(self, attr)
             if value & mask:
                 break
             setattr(self, attr, value | mask)
 
-    def bit_random_remove(self, attr):
+    def bit_random_remove(self, attr, rate=0.5):
         size = self.get_bit_width(attr)
-        while random.choice([True, False]):
+        while random.random() <= rate:
             mask = 1 << random.randint(0, size-1)
             mask = mask ^ ((2**size)-1)
             value = getattr(self, attr)
@@ -204,7 +204,7 @@ class MonsterObject(TableObject):
             self.bit_shuffle("cant_evade")
             self.bit_random_add("cant_evade")
         self.bit_random_remove("cant_evade")
-        self.bit_random_add("status")
+        self.bit_random_add("status", rate=0.1)
         self.bit_random_add("command_immunity")
 
     def cleanup(self):
