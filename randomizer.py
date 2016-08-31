@@ -99,7 +99,7 @@ class MonsterObject(TableObject):
     intershuffle_attributes = [
         "agility", "evasion", "defense",
         "magic_defense", "magic_evasion", "hp", "mp", "xp", "gp",
-        "level", "elemental_immunities", "status_immunities", "absorptions",
+        "level", "elemental_immunities", "absorptions",
         "cant_evade", "weaknesses",
         ]
 
@@ -195,8 +195,7 @@ class MonsterObject(TableObject):
                 self.level = new_level
 
         oldimmunities = self.status_immunities
-        for attr in ["elemental_immunities", "status_immunities",
-                "absorptions", "weaknesses"]:
+        for attr in ["elemental_immunities", "absorptions", "weaknesses"]:
             if not self.is_boss:
                 self.bit_shuffle(attr)
             else:
@@ -206,6 +205,7 @@ class MonsterObject(TableObject):
             self.bit_random_add("cant_evade")
         self.bit_random_remove("cant_evade")
         oldstatus = self.status
+        self.bit_random_add("status_immunities")
         self.bit_random_add("status", rate=0.1)
         newstatus = self.status
         newstatus = newstatus & (newstatus ^ oldimmunities)
