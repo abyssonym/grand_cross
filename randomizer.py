@@ -194,6 +194,7 @@ class MonsterObject(TableObject):
             elif not self.is_boss and random.choice([True, False]):
                 self.level = new_level
 
+        oldimmunities = self.status_immunities
         for attr in ["elemental_immunities", "status_immunities",
                 "absorptions", "weaknesses"]:
             if not self.is_boss:
@@ -204,11 +205,14 @@ class MonsterObject(TableObject):
             self.bit_shuffle("cant_evade")
             self.bit_random_add("cant_evade")
         self.bit_random_remove("cant_evade")
+        oldstatus = self.status
         self.bit_random_add("status", rate=0.1)
+        newstatus = self.status
+        newstatus = newstatus & (newstatus ^ oldimmunities)
+        self.status = (oldstatus & oldimmunities) | newstatus
         self.bit_random_add("command_immunity")
 
     def cleanup(self):
-        self.status = self.status & (self.status ^ self.status_immunities)
         if self.status & (1 << 17) and self.index not in [0x159, 0x14e, 0x14f]:
             # necrophobia invulnerability
             self.status ^= (1 << 17)
