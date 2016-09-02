@@ -439,6 +439,7 @@ class TreasureObject(TableObject):
                 self.treasure_type = 0x20
             self.value = get_item_similar_price(price, magic=self.is_magic)
         else:  # gold
+            price = mutate_normal(price, minimum=1, maximum=65000)
             exponent = 0
             while price >= 100:
                 price /= 10
