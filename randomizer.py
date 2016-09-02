@@ -9,7 +9,7 @@ from collections import defaultdict
 from os import path
 
 
-VERSION = 3
+VERSION = 4
 ALL_OBJECTS = None
 CRYSTAL_ADDR_FILE = path.join(tblpath, "crystal_list.txt")
 caf = open(CRYSTAL_ADDR_FILE)
