@@ -378,6 +378,8 @@ class TreasureObject(TableObject):
             return False
         if bin(self.treasure_type & 0xE0).count("1") > 1:
             return False
+        if not self.is_gold and self.treasure_type & 0x7:
+            return False
         return True
 
     @property
