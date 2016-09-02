@@ -19,9 +19,9 @@ caf.close()
 
 
 def divisibility_rank(level):
-    scores = {2: 1000,
-              3: 10,
-              4: 100,
+    scores = {2: 5000,
+              3: 100,
+              4: 1000,
               5: 10000}
     remaining = scores.keys()
     rank = 0
