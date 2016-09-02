@@ -530,16 +530,18 @@ class JobEquipObject(TableObject):
             for j in equip_jobs:
                 if j.equipment & mask:
                     counter += 1
-            self._frequency[i] = min(float(counter)/len(equip_jobs),
-                                     1 / 3.0)
+            self._frequency[i] = float(counter) / len(equip_jobs)
         return self.frequency(value)
 
     def mutate(self):
         if self.equipment == 0xFFFFFFFF:
             return
+        class_frequency = bin(self.equipment).count('1') / 32.0
         for i in xrange(32):
             mask = 1 << i
-            if random.random() < self.frequency(i):
+            frequency = min(self.frequency(i), class_frequency, 1/3.0)
+            frequency = max(frequency, 1/32.0)
+            if random.random() < frequency:
                 self.equipment ^= mask
 
     @classmethod
