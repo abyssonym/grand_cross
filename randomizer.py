@@ -1,7 +1,8 @@
-from randomtools.tablereader import TableObject, get_global_label, tblpath
+from randomtools.tablereader import (
+        TableObject, get_global_label, tblpath, addresses, get_random_degree,
+        get_activated_patches, mutate_normal, shuffle_normal, write_patch)
 from randomtools.utils import (
-    classproperty, mutate_normal, shuffle_bits, get_snes_palette_transformer,
-    utilrandom as random)
+    classproperty, get_snes_palette_transformer, utilrandom as random)
 from randomtools.interface import (
     get_outfile, get_seed, get_flags, run_interface, rewrite_snes_meta,
     clean_and_write, finish_interface)
@@ -16,6 +17,17 @@ caf = open(CRYSTAL_ADDR_FILE)
 CRYSTAL_ADDRS = [int(line.strip().split()[0], 0x10)
                  for line in caf.readlines()]
 caf.close()
+
+
+def shuffle_bits(value, size=8):
+    numbits = bin(value).count("1")
+    if numbits:
+        digits = random.sample(range(size), numbits)
+        newvalue = 0
+        for d in digits:
+            newvalue |= (1 << d)
+        value = newvalue
+    return value
 
 
 def divisibility_rank(level):
