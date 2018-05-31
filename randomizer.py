@@ -605,6 +605,14 @@ class JobAbilityObject(TableObject):
     def groupsort(cls, jaos):
         return sorted(jaos, key=lambda jao: (jao.rank, jao.index))
 
+    def cleanup(self):
+        if not (self.ap == 999 or self.ap < 5):
+            ap = int(round(self.ap*2, -1)) / 2
+            assert ap % 5 == 0
+            assert abs(ap - self.ap) <= 4
+            self.ap = ap
+        self.ap = min(999, max(1, self.ap))
+
 
 class AbilityCountObject(TableObject):
     @classproperty
