@@ -329,6 +329,11 @@ class MonsterObject(TableObject):
             self.elemental_immunities ^ (self.absorptions | self.weaknesses))
         self.command_immunity &= 0x98
 
+        if self.index == 0x8a:
+            # Pao's tent drop
+            d = DropObject.get(self.index)
+            d.drop_common = d.old_data["drop_common"]
+
 
 class DropObject(TableObject):
     flag = "t"
