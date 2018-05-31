@@ -1,4 +1,5 @@
 # objname tablefile address count grouped
+JobCrystalObject    job_crystal_table.txt       crystal_list.txt
 MonsterObject       monster_table.txt           100000  384
 DropObject          drop_table.txt              105000  384
 PriceObject         price_table.txt             112a00  384
@@ -11,3 +12,6 @@ JobEquipObject      job_equip_table.txt         115708  22
 JobCommandObject    job_command_table.txt       115760  22
 JobInnatesObject    job_innates_table.txt       1157b8  22
 JobPaletteObject    job_palette_table.txt       14a3c0  110
+$freelancer         84fc3
+$mime               91baf
+$mime_abilities     115429

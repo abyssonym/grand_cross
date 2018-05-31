@@ -91,6 +91,103 @@ def get_item_similar_price(price=None, magic=False):
     return chosen
 
 
+class JobCrystalObject(TableObject):
+    flag = "y"
+    flag_description = "jobs obtained from crystal shards"
+
+    @classproperty
+    def after_order(cls):
+        return [JobAbilityObject, JobCommandObject]
+
+    @classmethod
+    def map_crystal_job(cls, value):
+        return (7-(value%8)) + ((value/8)*8)
+
+    @property
+    def job_index(self):
+        return self.map_crystal_job(self.crystal_index)
+
+    @property
+    def is_freelancer(self):
+        return self.pointer == addresses.freelancer
+
+    @property
+    def is_mime(self):
+        return self.pointer == addresses.mime
+
+    @property
+    def has_fight_command(self):
+        return JobCommandObject.get(self.job_index).commands[0] == 5
+
+    @property
+    def intershuffle_valid(self):
+        return not self.is_mime
+
+    @property
+    def ability_ap_rank(self):
+        if self.is_freelancer:
+            return 0
+        jaos = JobAbilityObject.groups[self.job_index]
+        rank = sum([jao.ap for jao in jaos]) / float(len(jaos))
+        return rank
+
+    @property
+    def rank(self):
+        if self.index == 0:
+            return 1
+        elif self.index <= 6:
+            return 2
+        elif self.index <= 9:
+            return 4
+        elif self.index <= 13:
+            return 6
+        elif self.index <= 15:
+            return 5
+        elif self.index <= 20:
+            return 3
+        elif self.index == 21:
+            return 7
+        raise Exception("Unknown index.")
+
+    @classmethod
+    def intershuffle(cls):
+        candidates = sorted(
+            [jco for jco in JobCrystalObject.every if jco.intershuffle_valid],
+            key=lambda jco: (jco.ability_ap_rank, jco.signature))
+        shuffled = []
+        while candidates:
+            max_index = len(candidates)-1
+            index = random.randint(0, max_index)
+            degree = JobCrystalObject.random_degree ** 0.25
+            if degree <= 0.5:
+                degree = degree * 2
+                a, b = 0, index
+            else:
+                degree = (degree - 0.5) * 2
+                a, b = index, max_index
+            index = int(round((a*(1-degree)) + (b*degree)))
+            index = random.randint(0, index)
+            chosen = candidates[index]
+            shuffled.append(chosen)
+            candidates.remove(chosen)
+
+        candidates = sorted(
+            shuffled, key=lambda jco: (jco.rank, jco.signature))
+        assert len(candidates) == len(shuffled) == 21
+        for c, s in zip(candidates, shuffled):
+            c.crystal_index = s.old_data["crystal_index"]
+
+        freelancer = [jco for jco in candidates if jco.is_freelancer][0]
+        fight_crystals = [jco for jco in candidates if jco.has_fight_command]
+        if freelancer not in fight_crystals:
+            print len(fight_crystals), freelancer in fight_crystals
+            assert not freelancer.has_fight_command
+            chosen = random.choice(fight_crystals)
+            freelancer.crystal_index, chosen.crystal_index = (
+                chosen.crystal_index, freelancer.crystal_index)
+        assert freelancer.has_fight_command
+
+
 class MonsterObject(TableObject):
     flag = "m"
     flag_description = "monster stats"
@@ -473,8 +570,8 @@ class JobAbilityObject(TableObject):
         if hasattr(cls, "_every"):
             return cls._every
         cls._every = super(JobAbilityObject, cls).every
-        mimic = JobAbilityObject(get_outfile(), 0x115429, index=99,
-                                 groupindex=20)
+        mimic = JobAbilityObject(get_outfile(), addresses.mime_abilities,
+                                 index=99, groupindex=20)
         cls._every.append(mimic)
         return cls.every
 
@@ -650,11 +747,6 @@ class JobCommandObject(TableObject):
 
 
 class JobInnatesObject(TableObject):
-    # this flag stuff is a hack
-    # because I'm too lazy to make a way to add flags manually
-    flag = "y"
-    flag_description = "jobs obtained from crystal shards"
-
     def cleanup(self):
         self.innates |= 0x8
 
@@ -680,41 +772,6 @@ class JobPaletteObject(TableObject):
             setattr(self, "color%s" % i, color)
 
 
-def randomize_crystal_shards():
-    if "y" not in get_flags():
-        return
-
-    FREELANCER, MIME = 0x84fc3, 0x91baf
-
-    def map_crystal_job(value):
-        return (7-(value%8)) + ((value/8)*8)
-
-    def map_job_crystal(value):
-        crystals = [c for c in range(24) if map_crystal_job(c) == value]
-        assert len(crystals) == 1
-        return crystals[0]
-
-    values = []
-    # galuf has no mime sprite
-    addrs = [a for a in CRYSTAL_ADDRS if a not in [FREELANCER, MIME]]
-    assert len(addrs) == 20
-    f = open(get_outfile(), "r+b")
-    start_candidates = [j.index for j in JobCommandObject.every
-                        if j.commands[0] == 5 and j.index < 20]
-    start_choice = random.choice(start_candidates)
-    f.seek(FREELANCER)
-    f.write(chr(map_job_crystal(start_choice)))
-    remaining = [j.index for j in JobCommandObject.every
-                 if j.index != 20 and j.index != start_choice]
-    random.shuffle(remaining)
-    assert len(addrs) == len(remaining) == 20
-    for addr, j in zip(addrs, remaining):
-        f.seek(addr)
-        f.write(chr(map_job_crystal(j)))
-    f.close()
-    return values
-
-
 if __name__ == "__main__":
     try:
         print ('You are using the FF5 "Grand Cross" '
@@ -726,7 +783,6 @@ if __name__ == "__main__":
         hexify = lambda x: "{0:0>2}".format("%x" % x)
         numify = lambda x: "{0: >3}".format(x)
         minmax = lambda x: (min(x), max(x))
-        randomize_crystal_shards()
         randomize_rng()
         clean_and_write(ALL_OBJECTS)
         rewrite_snes_meta("FF5-GC", VERSION, lorom=False)
