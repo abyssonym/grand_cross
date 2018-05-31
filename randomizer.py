@@ -51,7 +51,7 @@ def divisibility_rank(level):
 def randomize_rng():
     filename = get_outfile()
     f = open(filename, "r+b")
-    f.seek(0xFEC0)
+    f.seek(addresses.rng)
     random_numbers = range(0x100)
     random.shuffle(random_numbers)
     f.write("".join(map(chr, random_numbers)))
