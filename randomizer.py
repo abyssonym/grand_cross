@@ -178,10 +178,10 @@ class JobCrystalObject(TableObject):
             c.crystal_index = s.old_data["crystal_index"]
 
         freelancer = [jco for jco in candidates if jco.is_freelancer][0]
-        fight_crystals = [jco for jco in candidates if jco.has_fight_command]
+        fight_crystals = [jco for jco in shuffled if jco.has_fight_command]
         if freelancer not in fight_crystals:
             assert not freelancer.has_fight_command
-            chosen = random.choice(fight_crystals)
+            chosen = fight_crystals[0]
             freelancer.crystal_index, chosen.crystal_index = (
                 chosen.crystal_index, freelancer.crystal_index)
         assert freelancer.has_fight_command
