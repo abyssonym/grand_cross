@@ -5,8 +5,8 @@ from randomtools.utils import (
     cached_property, classproperty, get_snes_palette_transformer,
     utilrandom as random)
 from randomtools.interface import (
-    get_outfile, get_seed, get_flags, run_interface, rewrite_snes_meta,
-    clean_and_write, finish_interface)
+    get_outfile, get_seed, get_flags, get_activated_codes,
+    run_interface, rewrite_snes_meta, clean_and_write, finish_interface)
 from collections import defaultdict
 from os import path
 
@@ -461,14 +461,14 @@ class TreasureObject(TableObject):
 
     @property
     def intershuffle_valid(self):
-        if self.is_monster:
-            return False
         if self.treasure_type & 0x18:
             return False
         if self.is_gold and self.treasure_type & 0x7 > 4:
             return False
         if bin(self.treasure_type & 0xE0).count("1") > 1:
             return False
+        if self.is_monster:
+            return "miab" in get_activated_codes()
         if not self.is_gold and self.treasure_type & 0x7:
             return False
         return True
@@ -477,12 +477,15 @@ class TreasureObject(TableObject):
     def mutate_valid(self):
         if not self.intershuffle_valid:
             return False
+        if self.is_monster:
+            return False
         if self.is_gold:
             return True
         if self.is_magic:
             return False
         if self.is_item:
             return item_is_buyable(self.value, magic=False)
+        return False
 
     @cached_property
     def rank(self):
@@ -732,6 +735,8 @@ class JobCommandObject(TableObject):
 class JobInnatesObject(TableObject):
     def cleanup(self):
         self.innates |= 0x8
+        if "zerker" in get_activated_codes():
+            self.innates |= 0x800
 
 
 class JobPaletteObject(TableObject):
@@ -763,7 +768,9 @@ if __name__ == "__main__":
                        if isinstance(g, type) and issubclass(g, TableObject)
                        and g not in [TableObject]]
 
-        codes = {}
+        codes = {"zerker": ["zerker"],
+                 "miab": ["miab"],
+                }
 
         run_interface(ALL_OBJECTS, snes=True, codes=codes, custom_degree=True)
         hexify = lambda x: "{0:0>2}".format("%x" % x)
