@@ -207,9 +207,14 @@ class MonsterObject(TableObject):
     intershuffle_attributes = [
         "agility", "evasion", "defense",
         "magic_defense", "magic_evasion", "hp", "mp", "xp", "gp",
-        "level", "elemental_immunities", "absorptions",
-        "cant_evade", "weaknesses",
+        "level",
         ]
+    magic_mutate_bit_attributes = {
+        ("elemental_immunities", "absorptions", "weaknesses"): (
+            0xFF, 0xFF, 0xFF),
+        ("status_immunities", "status"): (0xFFFFFF, 0xFDFFFF),
+        ("cant_evade", "command_immunity"): (0xFF, 0x98),
+        }
 
     @property
     def drops(self):
@@ -246,50 +251,12 @@ class MonsterObject(TableObject):
         return self.get_bit("heavy") or (
             self.get_bit("control") and self.get_bit("catch"))
 
-    def get_bit_width(self, attr):
-        for (a, width, _) in self.specs.attributes:
-            if a == attr:
-                break
-        else:
-            raise Exception("Bit width indeterminate.")
-        return width * 8
-
-    def bit_shuffle(self, attr):
-        shuffled = shuffle_bits(getattr(self, attr),
-                                size=self.get_bit_width(attr))
-        setattr(self, attr, shuffled)
-
-    def bit_random_add(self, attr, rate=0.5):
-        size = self.get_bit_width(attr)
-        while random.random() <= rate:
-            mask = 1 << random.randint(0, size-1)
-            value = getattr(self, attr)
-            if value & mask:
-                break
-            setattr(self, attr, value | mask)
-
-    def bit_random_remove(self, attr, rate=0.5):
-        size = self.get_bit_width(attr)
-        while random.random() <= rate:
-            mask = 1 << random.randint(0, size-1)
-            mask = mask ^ ((2**size)-1)
-            value = getattr(self, attr)
-            if value == value & mask:
-                break
-            setattr(self, attr, value & mask)
-
     def mutate(self):
-        oldstats = {}
-        for key in self.mutate_attributes:
-            oldstats[key] = getattr(self, key)
         super(MonsterObject, self).mutate()
-        if self.is_boss:
-            for (attr, oldval) in oldstats.items():
-                if getattr(self, attr) < oldval:
-                    setattr(self, attr, oldval)
 
         if 1 <= self.level <= 99:
-            new_level = mutate_normal(self.level, minimum=1, maximum=99)
+            new_level = mutate_normal(self.level, minimum=1, maximum=99,
+                                      random_degree=self.random_degree)
             old_divisibility = divisibility_rank(self.level)
             new_divisibility = divisibility_rank(new_level)
             if new_divisibility < old_divisibility:
@@ -297,33 +264,32 @@ class MonsterObject(TableObject):
                     self.level = new_level
                 else:
                     difference = float(new_level) / self.level
+                    if difference > 1:
+                        difference = 1 / difference
+                    difference = (difference * (1-self.random_degree)) + (
+                        self.random_degree**2)
                     if random.random() < difference:
                         self.level = new_level
-            elif not self.is_boss and random.choice([True, False]):
+            elif (not self.is_boss
+                    and random.random() < (self.random_degree ** 0.5)):
                 self.level = new_level
 
-        oldimmunities = self.status_immunities
-        for attr in ["elemental_immunities", "absorptions", "weaknesses"]:
-            if not self.is_boss:
-                self.bit_shuffle(attr)
-            else:
-                self.bit_random_add(attr)
-        if not self.is_boss:
-            self.bit_shuffle("cant_evade")
-            self.bit_random_add("cant_evade")
-        self.bit_random_remove("cant_evade")
-        oldstatus = self.status
-        self.bit_random_add("status_immunities")
-        self.bit_random_add("status", rate=0.1)
-        newstatus = self.status
-        newstatus = newstatus & (newstatus ^ oldimmunities)
-        self.status = (oldstatus & oldimmunities) | newstatus
-        self.bit_random_add("command_immunity")
-
     def cleanup(self):
-        if self.status & (1 << 17) and self.index not in [0x159, 0x14e, 0x14f]:
+        self.creature_type = self.old_data["creature_type"]
+
+        if self.is_boss:
+            for attr in self.mutate_attributes:
+                if getattr(self, attr) < self.old_data[attr]:
+                    setattr(self, attr, self.old_data[attr])
+
+        self.status ^= ((self.status & self.status_immunities)
+            ^ (self.old_data["status"] & self.old_data["status_immunities"]))
+        self.status |= (self.old_data["status"]
+            & self.old_data["status_immunities"] & self.status_immunities)
+        if self.status & (1 << 17) and not self.old_data["status"] & (1 << 17):
             # necrophobia invulnerability
             self.status ^= (1 << 17)
+
         self.elemental_immunities = self.elemental_immunities & (
             self.elemental_immunities ^ (self.absorptions | self.weaknesses))
         self.command_immunity &= 0x98
