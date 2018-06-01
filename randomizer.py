@@ -85,7 +85,8 @@ def get_item_similar_price(price=None, magic=False):
     else:
         items = sorted([(PriceObject.get(i).price, i) for i in items])
 
-    newprice = mutate_normal(price, minimum=1, maximum=max(65000, price))
+    newprice = mutate_normal(price, minimum=1, maximum=max(65000, price),
+                             random_degree=TreasureObject.random_degree)
     items = items[:1] + [i for (p, i) in items if p <= newprice]
     chosen = items[-1]
     return chosen
@@ -520,7 +521,8 @@ class TreasureObject(TableObject):
                 self.treasure_type = 0x20
             self.value = get_item_similar_price(price, magic=self.is_magic)
         else:  # gold
-            price = mutate_normal(price, minimum=1, maximum=max(65000, price))
+            price = mutate_normal(price, minimum=1, maximum=max(65000, price),
+                                  random_degree=TreasureObject.random_degree)
             price = min(65000, max(100, price))
             exponent = 0
             while price >= 100:
