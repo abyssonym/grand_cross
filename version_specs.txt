@@ -1,0 +1,21 @@
+Here's a rundown of what I've done for the various requests. I haven't had a chance to do much testing, but these are descriptions of what the intended behavior is. There's still some stuff I want to tweak but I figured you deserved a progress report on the 1st.
+
+Spells bug with the Magic Knight spells list when you get one as a treasure pickup
+- A more conservative chest randomization method was used: chests should only contain spells that normally appear in chests.
+
+Equipment bug to make sure everyone can equip the things that it shows they can equip
+- This isn't really a bug, and it's not the randomizer's fault. The heavy armor icon appears on the white mage's status screen in vanilla, too. The RPGe translation uses different icons to differentiate between robes and heavy armor, but it seems that the original japanese version used the heavy armor icon for all kinds of armor, so it appears on every job's status screen. If you encounter a different situation, such as not being able to equip a weapon that is displayed as equippable, give me the seed number so I can check it out.
+
+ABP standards are a bit high and can be toned down a bit from the couple/few hundred needed for each ability
+- The AP costs are roughly based on the original costs. In vanilla, there are two skills that cost 999 AP: Mimic and X-Magic, and generally it should be those two abilities that cost 999 AP in randomizer, though they might rarely swap AP costs with other high-cost abilities such as X-Fight. But there will always be exactly two abilities that cost 999 AP.
+- AP costs can also be randomized another way. For example, if an ability costs 400 AP, it could be randomized up or down to 600 AP or 200 AP, and both possibilities are equally likely. For another example, an ability that costs 10 AP could be randomized up or down to 15 or 5 AP.
+- Regardless of how things are randomized, a job's abilities will always be in ascending order by AP cost, so if you see a 999 AP ability, it's not blocking you from learning anything that would be a lower cost. If you're unlucky, you can get both 999 AP abilities on the same job, but that should be a rare occurrence.
+- To make things a little more balanced I've weighted early game jobs to have generally lower-cost abilities. I'm reluctant to nerf AP costs, because they're based on the original game, but I could add a code that halves all AP costs or something.
+
+The Galuf's World Island guy to drop Tents like normal
+- The Pao enemy should always have tents as its common drop, now.
+
+A bit more random to the classes battle abilities
+- The possibility of random abilities has been very slightly increased. It was already quite high before, a roughly 70% chance of an ability being changed. That's by design; I never intended for *every* class to be different, because changing only half of the jobs is enough to change the general dynamics of the game. However, I've implemented custom randomness settings, so if you want changes to be basically guaranteed, set the randomness for JobCommandObject to 1.0.
+
+The new randomization algorithm might make some randomization more conservative, particularly the way some flags are handled, such as job equipment. To see more extreme equipment randomizations than you're used to, set the randomness for JobEquipObject to a reasonably high value. Something in the 0.75-0.9 range is probably better than a full 1.0.
