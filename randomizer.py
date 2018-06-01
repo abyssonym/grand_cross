@@ -85,7 +85,7 @@ def get_item_similar_price(price=None, magic=False):
     else:
         items = sorted([(PriceObject.get(i).price, i) for i in items])
 
-    newprice = mutate_normal(price, minimum=1, maximum=65000)
+    newprice = mutate_normal(price, minimum=1, maximum=max(65000, price))
     items = items[:1] + [i for (p, i) in items if p <= newprice]
     chosen = items[-1]
     return chosen
@@ -180,7 +180,6 @@ class JobCrystalObject(TableObject):
         freelancer = [jco for jco in candidates if jco.is_freelancer][0]
         fight_crystals = [jco for jco in candidates if jco.has_fight_command]
         if freelancer not in fight_crystals:
-            print len(fight_crystals), freelancer in fight_crystals
             assert not freelancer.has_fight_command
             chosen = random.choice(fight_crystals)
             freelancer.crystal_index, chosen.crystal_index = (
@@ -555,7 +554,8 @@ class TreasureObject(TableObject):
                 self.treasure_type = 0x20
             self.value = get_item_similar_price(price, magic=self.is_magic)
         else:  # gold
-            price = mutate_normal(price, minimum=1, maximum=65000)
+            price = mutate_normal(price, minimum=1, maximum=max(65000, price))
+            price = min(65000, max(100, price))
             exponent = 0
             while price >= 100:
                 price /= 10
@@ -696,6 +696,7 @@ class JobCommandObject(TableObject):
 
     def randomize(self):
         if self.index == 6:
+            # berserker passive
             candidates = [jao.ability for jao in
                           JobAbilityObject.groups[self.index]
                           if jao.ability > 0x4D]
@@ -722,7 +723,7 @@ class JobCommandObject(TableObject):
         for i, ability in enumerate(self.commands):
             if not candidates:
                 break
-            if ability > 0 and random.randint(1, 3) == 3:
+            if ability > 0 and random.random() <= (self.random_degree ** 0.75):
                 new_command = random.choice(candidates)
                 if new_command in self.commands:
                     continue
@@ -735,8 +736,10 @@ class JobCommandObject(TableObject):
                     candidates.remove(new_command)
             if ability in candidates:
                 candidates.remove(ability)
-        if not set(self.commands) & set([5, 0x2b, 2]):
-            self.commands = old_commands
+        while not set(self.commands) & set([5, 0x2b, 2]):
+            i, c = random.choice(sorted(enumerate(old_commands)))
+            if c in [5, 0x2b, 2]:
+                self.commands[i] = c
         for rg in redundant_groups:
             if len(set(self.commands) & set(rg)) >= 2:
                 assert False
