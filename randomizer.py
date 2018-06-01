@@ -610,46 +610,37 @@ class JobEquipObject(TableObject):
     flag = "q"
     flag_description = "job equippable items"
 
-    @classmethod
-    def frequency(self, value):
-        if hasattr(self, "_frequency"):
-            return self._frequency[value]
-        self._frequency = {}
-        equip_jobs = [j for j in JobEquipObject.every
-                      if j.equipment != 0xFFFFFFFF]
-        for i in xrange(32):
-            mask = 1 << i
-            counter = 0
-            for j in equip_jobs:
-                if j.equipment & mask:
-                    counter += 1
-            self._frequency[i] = float(counter) / len(equip_jobs)
-        return self.frequency(value)
-
-    def mutate(self):
-        if self.equipment == 0xFFFFFFFF:
-            return
-        class_frequency = bin(self.equipment).count('1') / 32.0
-        for i in xrange(32):
-            mask = 1 << i
-            frequency = min(self.frequency(i), class_frequency, 1/3.0)
-            frequency = max(frequency, 1/32.0)
-            if random.random() < frequency:
-                self.equipment ^= mask
+    magic_mutate_bit_attributes = {
+        ("equipment",): (0xFFFFFFFF,)
+        }
 
     @classmethod
     def full_cleanup(cls):
         equippable = 0
+        all_mask = 0xFFFFFFFF
+        none_mask = 0
         for j in cls.every:
             if j.equipment == 0xFFFFFFFF:
                 continue
             equippable |= j.equipment
+            all_mask &= j.old_data["equipment"]
+            none_mask |= j.old_data["equipment"]
+
         for i in xrange(32):
             mask = (1 << i)
             if not mask & equippable:
                 j = random.choice(cls.every)
                 j.equipment |= mask
+
+        for j in cls.every:
+            j.equipment |= all_mask
+            j.equipment &= none_mask
+
         super(JobEquipObject, cls).full_cleanup()
+
+    def cleanup(self):
+        if self.old_data["equipment"] == 0xFFFFFFFF:
+            self.equipment = self.old_data["equipment"]
 
 
 class JobCommandObject(TableObject):
