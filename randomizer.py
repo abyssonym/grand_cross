@@ -95,6 +95,7 @@ def get_item_similar_price(price=None, magic=False):
 class JobCrystalObject(TableObject):
     flag = "y"
     flag_description = "jobs obtained from crystal shards"
+    custom_random_enable = True
 
     @classproperty
     def after_order(cls):
@@ -191,6 +192,8 @@ class JobCrystalObject(TableObject):
 class MonsterObject(TableObject):
     flag = "m"
     flag_description = "monster stats"
+    custom_random_enable = True
+
     mutate_attributes = {
         "agility": None,
         "strength": None,
@@ -303,6 +306,8 @@ class MonsterObject(TableObject):
 
 class DropObject(TableObject):
     flag = "t"
+    custom_random_enable = True
+
     intershuffle_attributes = [
         ("steal_common", "steal_rare"),
         ("drop_common", "drop_rare"),
@@ -334,6 +339,8 @@ class DropObject(TableObject):
 
 class PriceObject(TableObject):
     flag = "p"
+    custom_random_enable = True
+
     mutate_attributes = {"significand": (1, 0xFF)}
 
     @property
@@ -354,6 +361,7 @@ class PriceObject(TableObject):
 class ShopObject(TableObject):
     flag = "p"
     flag_description = "shops"
+    custom_random_enable = True
 
     @property
     def rank(self):
@@ -446,6 +454,8 @@ class ShopObject(TableObject):
 class TreasureObject(TableObject):
     flag = "t"
     flag_description = "treasure"
+    custom_random_enable = True
+
     intershuffle_attributes = [("treasure_type", "value")]
 
     @property
@@ -535,6 +545,8 @@ class TreasureObject(TableObject):
 class JobAbilityObject(TableObject):
     flag = "a"
     flag_description = "job learned abilities"
+    custom_random_enable = True
+
     mutate_attributes = {"ap": (1, 999)}
     intershuffle_attributes = ["ap"]
 
@@ -598,6 +610,8 @@ class AbilityCountObject(TableObject):
 class JobStatsObject(TableObject):
     flag = "s"
     flag_description = "job stats"
+    custom_random_enable = True
+
     mutate_attributes = {
         "strength": None,
         "agility": None,
@@ -609,6 +623,7 @@ class JobStatsObject(TableObject):
 class JobEquipObject(TableObject):
     flag = "q"
     flag_description = "job equippable items"
+    custom_random_enable = True
 
     magic_mutate_bit_attributes = {
         ("equipment",): (0xFFFFFFFF,)
@@ -646,6 +661,7 @@ class JobEquipObject(TableObject):
 class JobCommandObject(TableObject):
     flag = "b"
     flag_description = "job base commands"
+    custom_random_enable = True
 
     @classproperty
     def after_order(self):
@@ -754,7 +770,10 @@ if __name__ == "__main__":
         ALL_OBJECTS = [g for g in globals().values()
                        if isinstance(g, type) and issubclass(g, TableObject)
                        and g not in [TableObject]]
-        run_interface(ALL_OBJECTS, snes=True)
+
+        codes = {}
+
+        run_interface(ALL_OBJECTS, snes=True, codes=codes, custom_degree=True)
         hexify = lambda x: "{0:0>2}".format("%x" % x)
         numify = lambda x: "{0: >3}".format(x)
         minmax = lambda x: (min(x), max(x))
