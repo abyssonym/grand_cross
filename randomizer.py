@@ -2,7 +2,8 @@ from randomtools.tablereader import (
         TableObject, get_global_label, tblpath, addresses, get_random_degree,
         get_activated_patches, mutate_normal, shuffle_normal, write_patch)
 from randomtools.utils import (
-    classproperty, get_snes_palette_transformer, utilrandom as random)
+    cached_property, classproperty, get_snes_palette_transformer,
+    utilrandom as random)
 from randomtools.interface import (
     get_outfile, get_seed, get_flags, run_interface, rewrite_snes_meta,
     clean_and_write, finish_interface)
@@ -81,11 +82,11 @@ def get_item_similar_price(price=None, magic=False):
         items |= set(s.items)
 
     if magic:
-        items = sorted([(PriceObject.get(i+0x100).price, i) for i in items])
+        items = sorted([(PriceObject.get(i+0x100).rank, i) for i in items])
     else:
-        items = sorted([(PriceObject.get(i).price, i) for i in items])
+        items = sorted([(PriceObject.get(i).rank, i) for i in items])
 
-    newprice = mutate_normal(price, minimum=1, maximum=max(65000, price),
+    newprice = mutate_normal(price, minimum=1, maximum=65000, wide=True,
                              random_degree=TreasureObject.random_degree)
     items = items[:1] + [i for (p, i) in items if p <= newprice]
     chosen = items[-1]
@@ -133,7 +134,7 @@ class JobCrystalObject(TableObject):
         rank = sum([jao.ap for jao in jaos]) / float(len(jaos))
         return rank
 
-    @property
+    @cached_property
     def rank(self):
         if self.index == 0:
             return 1
@@ -226,7 +227,7 @@ class MonsterObject(TableObject):
         return (drops.steal_rare, drops.steal_common,
                 drops.drop_rare, drops.drop_common)
 
-    @property
+    @cached_property
     def rank(self):
         factors = [
             "level",
@@ -313,7 +314,7 @@ class DropObject(TableObject):
         ("drop_common", "drop_rare"),
         ]
 
-    @property
+    @cached_property
     def rank(self):
         return MonsterObject.get(self.index).rank
 
@@ -326,7 +327,7 @@ class DropObject(TableObject):
                       "drop_common", "drop_rare"]:
             value = getattr(self, attr)
             if value > 0 and item_is_buyable(value):
-                price = PriceObject.get(value).price
+                price = PriceObject.get(value).rank
                 setattr(self, attr, get_item_similar_price(price))
 
         if random.choice([True, False]):
@@ -343,7 +344,7 @@ class PriceObject(TableObject):
 
     mutate_attributes = {"significand": (1, 0xFF)}
 
-    @property
+    @cached_property
     def rank(self):
         return self.price
 
@@ -363,12 +364,12 @@ class ShopObject(TableObject):
     flag_description = "shops"
     custom_random_enable = True
 
-    @property
+    @cached_property
     def rank(self):
         if self.shop_type == 0:
-            prices = [PriceObject.get(i+0x100).price for i in self.items if i]
+            prices = [PriceObject.get(i+0x100).rank for i in self.items if i]
         else:
-            prices = [PriceObject.get(i).price for i in self.items if i]
+            prices = [PriceObject.get(i).rank for i in self.items if i]
         if not prices:
             return -1
         return max(prices) * sum(prices) / len(prices)
@@ -479,21 +480,21 @@ class TreasureObject(TableObject):
         if self.is_gold:
             return True
         if self.is_magic:
-            return item_is_buyable(self.value, magic=True)
+            return False
         if self.is_item:
             return item_is_buyable(self.value, magic=False)
 
-    @property
+    @cached_property
     def rank(self):
         if not self.intershuffle_valid:
             return -1
         if self.is_magic:
-            price = PriceObject.get(self.value + 0x100).price
+            price = PriceObject.get(self.value + 0x100).rank
         elif self.is_item:
-            price = PriceObject.get(self.value).price
+            price = PriceObject.get(self.value).rank
         else:
             price = self.value * (10**(self.treasure_type & 0x7))
-        if not self.mutate_valid:
+        if not self.mutate_valid and not self.is_magic:
             price += 60000
         return price
 
@@ -514,32 +515,23 @@ class TreasureObject(TableObject):
         return not self.treasure_type & 0xE0
 
     def cleanup(self):
-        return
-        print hex(self.index), hex(self.pointer)
+        if bin(self.treasure_type & 0xE0).count("1") > 1:
+            assert self.treasure_type == self.old_data["treasure_type"]
+            assert self.value == self.old_data["value"]
         assert not ((self.is_monster and (self.is_item or self.is_gold))
                     or (self.is_item and self.is_gold))
 
     def mutate(self):
         if not self.mutate_valid:
             return
-        chance = random.random()
         price = self.rank
-        if chance <= 0.85:
-            if chance <= 0.70:  # item
-                self.treasure_type = 0x40
-            else:  # magic
-                self.treasure_type = 0x20
+        if self.treasure_type == 0x40:
+            assert self.treasure_type == 0x40
+            assert self.is_item
+            assert not self.is_magic
             self.value = get_item_similar_price(price, magic=self.is_magic)
         else:  # gold
-            price = mutate_normal(price, minimum=1, maximum=max(65000, price),
-                                  random_degree=TreasureObject.random_degree)
-            price = min(65000, max(100, price))
-            exponent = 0
-            while price >= 100:
-                price /= 10
-                exponent += 1
-            self.treasure_type = exponent
-            self.value = price
+            assert self.is_gold
 
 
 class JobAbilityObject(TableObject):
@@ -560,7 +552,7 @@ class JobAbilityObject(TableObject):
         cls._every.append(mimic)
         return cls.every
 
-    @property
+    @cached_property
     def rank(self):
         return self.ap
 
@@ -583,7 +575,7 @@ class JobAbilityObject(TableObject):
 
     @classmethod
     def groupsort(cls, jaos):
-        return sorted(jaos, key=lambda jao: (jao.rank, jao.index))
+        return sorted(jaos, key=lambda jao: (jao.ap, jao.index))
 
     def cleanup(self):
         if not (self.ap == 999 or self.ap < 5):
