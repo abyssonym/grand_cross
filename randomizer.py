@@ -11,13 +11,8 @@ from collections import defaultdict
 from os import path
 
 
-VERSION = 4
+VERSION = 5
 ALL_OBJECTS = None
-CRYSTAL_ADDR_FILE = path.join(tblpath, "crystal_list.txt")
-caf = open(CRYSTAL_ADDR_FILE)
-CRYSTAL_ADDRS = [int(line.strip().split()[0], 0x10)
-                 for line in caf.readlines()]
-caf.close()
 
 
 def shuffle_bits(value, size=8):
