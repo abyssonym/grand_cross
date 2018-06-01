@@ -71,26 +71,21 @@ def item_is_buyable(value, magic=False):
         return False
 
 
-def get_item_similar_price(price=None, magic=False):
-    if magic:
-        shops = ShopObject.get_magic_shops()
-    else:
-        shops = ShopObject.get_nonmagic_shops()
+def get_item_similar_price(price=None):
+    shops = ShopObject.get_nonmagic_shops()
 
     items = set([])
     for s in shops:
         items |= set(s.items)
 
-    if magic:
-        items = sorted([(PriceObject.get(i+0x100).rank, i) for i in items])
-    else:
-        items = sorted([(PriceObject.get(i).rank, i) for i in items])
+    items = [PriceObject.get(i) for i in items]
+    items = sorted(items, key=lambda i: (i.rank, i.signature))
 
     newprice = mutate_normal(price, minimum=1, maximum=65000, wide=True,
                              random_degree=TreasureObject.random_degree)
-    items = items[:1] + [i for (p, i) in items if p <= newprice]
+    items = items[:1] + [i for i in items if i.price <= newprice]
     chosen = items[-1]
-    return chosen
+    return chosen.index
 
 
 class JobCrystalObject(TableObject):
@@ -406,6 +401,7 @@ class ShopObject(TableObject):
     @classmethod
     def full_randomize(cls):
         super(ShopObject, cls).full_randomize()
+        ShopObject.class_reseed("shops")
         for pretty_shop_type in ["Magic", "Weapons", "Armor", "Items"]:
             shops = [s for s in ShopObject.ranked if s.rank > 0 and
                      s.pretty_shop_type == pretty_shop_type]
@@ -418,33 +414,27 @@ class ShopObject(TableObject):
                 all_items |= set(items)
                 avg += len(items)
 
-            avg /= float(len(shops))
-            for n, s in enumerate(shops):
-                num_items = int(round(mutate_normal(avg, minimum=1,
-                                                    maximum=8)))
-                chosen_items = set([])
-                while len(chosen_items) < num_items:
-                    chosen_rank = mutate_normal(n, minimum=0,
-                                                maximum=len(shops)-1)
-                    candidates = sorted([i for i in itemranks[chosen_rank]
-                                         if i not in chosen_items])
+            all_items = [PriceObject.get(i) for i in all_items]
+            all_items = sorted(all_items, key=lambda i: (i.rank, i.signature))
+            done_items = set([])
+            random.shuffle(shops)
+            for s in shops:
+                s.reseed("wares")
+                shop_items = [i for i in s.items if i > 0]
+                chosen_items = []
+                while len(chosen_items) < len(shop_items):
+                    base_index = random.choice(shop_items)
+                    candidates = [i for i in all_items if i not in done_items]
                     if not candidates:
-                        a = n
-                        b = len(shops) / 2
-                        a, b = min(a, b), max(a, b)
-                        n = random.randint(a, b)
-                        continue
-                    item = random.choice(candidates)
-                    chosen_items.add(item)
-                s.items = sorted(chosen_items)
-                all_items -= chosen_items
-
-            all_items = sorted(all_items)
-            while all_items:
-                item = all_items.pop()
-                candidates = [s for s in shops if len(s.items) < 8]
-                s = random.choice(candidates)
-                s.items.append(item)
+                        candidates = list(all_items)
+                    candidates = [c for c in candidates
+                                  if c not in chosen_items]
+                    chosen = PriceObject.get(base_index).get_similar(
+                        candidates, override_outsider=True)
+                    chosen_items.append(chosen)
+                assert len(chosen_items) == len(set(chosen_items))
+                chosen_items = [c.index for c in chosen_items]
+                s.items = chosen_items
 
     def cleanup(self):
         while len(self.items) < 8:
@@ -532,7 +522,8 @@ class TreasureObject(TableObject):
             assert self.treasure_type == 0x40
             assert self.is_item
             assert not self.is_magic
-            self.value = get_item_similar_price(price, magic=self.is_magic)
+            price = min(price, 65000)
+            self.value = get_item_similar_price(price)
         else:  # gold
             assert self.is_gold
 
