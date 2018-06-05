@@ -517,7 +517,7 @@ class TreasureObject(TableObject):
             assert self.treasure_type == 0x40
             assert self.is_item
             assert not self.is_magic
-            price = min(price, 65000)
+            price = max(min(price, 65000), 1)
             self.value = get_item_similar_price(price)
         else:  # gold
             assert self.is_gold
