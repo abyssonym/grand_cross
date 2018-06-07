@@ -198,7 +198,7 @@ class MonsterObject(TableObject):
         "xp": (1, 65535),
         "gp": (1, 65535),
         }
-    intershuffle_attributes = [
+    randomselect_attributes = [
         "agility", "evasion", "defense",
         "magic_defense", "magic_evasion", "hp", "mp", "xp", "gp",
         "level",
@@ -311,7 +311,7 @@ class DropObject(TableObject):
     flag = "t"
     custom_random_enable = True
 
-    intershuffle_attributes = [
+    randomselect_attributes = [
         ("steal_common", "steal_rare"),
         ("drop_common", "drop_rare"),
         ]
