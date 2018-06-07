@@ -207,7 +207,7 @@ class MonsterObject(TableObject):
     magic_mutate_bit_attributes = {
         ("elemental_immunities", "absorptions", "weaknesses"): (
             0xFF, 0xFF, 0xFF),
-        ("status_immunities", "status"): (0xFFFFFF, 0xFDFFFF),
+        ("status_immunities", "status"): (0xFCFFFF, 0xFCFFFF),
         ("cant_evade", "command_immunity"): (0xFF, 0x98),
         }
 
@@ -219,6 +219,10 @@ class MonsterObject(TableObject):
 
     @cached_property
     def rank(self):
+        BANNED_INDEXES = [0x150]
+        if self.index in BANNED_INDEXES:
+            return -1
+
         factors = [
             "level",
             "hp",
@@ -237,9 +241,15 @@ class MonsterObject(TableObject):
 
     @property
     def intershuffle_valid(self):
+        if self.rank <= 0:
+            return False
         if not (self.level or self.hp):
             return False
-        return not (self.is_boss or self.level < 10)
+        return not self.is_boss
+
+    @property
+    def mutate_valid(self):
+        return self.rank > 0
 
     @property
     def is_boss(self):
@@ -293,6 +303,9 @@ class MonsterObject(TableObject):
             # Pao's tent drop
             d = DropObject.get(self.index)
             d.drop_common = d.old_data["drop_common"]
+
+        assert (self.status_immunities & 0x30000 ==
+                self.old_data["status_immunities"] & 0x30000)
 
 
 class DropObject(TableObject):
