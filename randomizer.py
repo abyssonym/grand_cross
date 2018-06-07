@@ -536,7 +536,7 @@ class TreasureObject(TableObject):
         if self.is_magic:
             return False
         if self.is_item:
-            return item_is_buyable(self.value, magic=False)
+            return True
         return False
 
     @cached_property
