@@ -516,6 +516,8 @@ class TreasureObject(TableObject):
         return not self.treasure_type & 0xE0
 
     def cleanup(self):
+        assert self.x == self.old_data["x"]
+        assert self.y == self.old_data["y"]
         if bin(self.treasure_type & 0xE0).count("1") > 1:
             assert self.treasure_type == self.old_data["treasure_type"]
             assert self.value == self.old_data["value"]

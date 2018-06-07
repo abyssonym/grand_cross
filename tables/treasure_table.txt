@@ -1,2 +1,4 @@
+x,1
+y,1
 treasure_type,1
 value,1
