@@ -11,7 +11,7 @@ from collections import defaultdict
 from os import path
 
 
-VERSION = 5
+VERSION = 6
 ALL_OBJECTS = None
 
 
