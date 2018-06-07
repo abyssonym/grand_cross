@@ -515,27 +515,15 @@ class TreasureObject(TableObject):
     def intershuffle_valid(self):
         if self.is_monster:
             return "miab" in get_activated_codes()
-        if self.treasure_type & 0x18:
-            return False
-        if self.is_gold and self.treasure_type & 0x7 > 4:
-            return False
-        if bin(self.treasure_type & 0xE0).count("1") > 1:
-            return False
-        if not self.is_gold and self.treasure_type & 0x7:
-            return False
         return True
 
     @property
     def mutate_valid(self):
         if not self.intershuffle_valid:
             return False
-        if self.is_monster:
+        if self.is_monster or self.is_magic:
             return False
-        if self.is_gold:
-            return True
-        if self.is_magic:
-            return False
-        if self.is_item:
+        if self.is_gold or self.is_item:
             return True
         return False
 
