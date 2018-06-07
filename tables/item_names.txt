@@ -1,0 +1,256 @@
+00
+01 Empty
+02 Knife
+03 Dagger
+04 Mithril
+05 Kunai
+06 MageMasher
+07 Guardian
+08 Kodachi
+09 Orialcon
+0A Air Knife
+0B Assassin
+0C Sasuke
+0D Broad
+0E Long
+0F Mithril
+10 Coral
+11 Ancient
+12 Great
+13 Slumber
+14 Defender
+15 Excalibur
+16 Ragnarok
+17 Javelin
+18 Spear
+19 Mithril
+1A Trident
+1B Wind
+1C Partisan
+1D Heavy
+1E TwinLance
+1F Holy
+20 Hiryuu
+21 Battle
+22 Mithril
+23 Ogre
+24 Warhammer
+25 Poison
+26 Earth
+27 Rune
+28 Thor
+29 Ashura
+2A Airblade
+2B Kotetsu
+2C Bizen
+2D Kiku
+2E Murasame
+2F Masamune
+30 Nimbus
+31 Rod
+32 Fire
+33 Ice
+34 Thunder
+35 Poison
+36 Lillith
+37 Wizard
+38 Staff
+39 Mithril
+3A Power
+3B Cure
+3C Light
+3D Sage
+3E Judgement
+3F Flame
+40 Frost
+41 Thunder
+42 Darkness
+43 KillerBow
+44 Elfin
+45 Yoichi
+46 Artemis
+47 Silver
+48 Dream
+49 Lamia
+4A Apollon
+4B Whip
+4C Chain
+4D Blitz
+4E Firebute
+4F Dragon
+50 Giyaman
+51 Earth
+52 Rune
+53 Tinker
+54 Sabre
+55 Blood Sword
+56 Rune Edge
+57 Flame
+58 Ice Brand
+59 Crescent
+5A Shuriken
+5B Fuuma
+5C Excalipur
+5D Beastkill
+5e Flail
+5f Mornstar
+60 Wonder Rod
+61 BraveBld
+62 Soot
+63 Chicken
+64 RisingSun
+65 Silver
+66 Gust
+67 Mafuuji
+68 Avis
+69 DoomCut
+6A Giant's
+6B ManEater
+6C Thief
+6D Dancing
+6E Enhancer
+6F L. Hand
+70 R. Hand
+71
+72
+73
+74
+75
+76
+77
+78
+79
+7A
+7B
+7C
+7D
+7E
+7F
+80
+81 Leather
+82 Bronze
+83 IronShld
+84 Mithril
+85 GoldShld
+86 Aegis
+87 Diamond
+88 Crystal
+89 Leather
+8A Bronze
+8B IronHelm
+8C Mithril
+8D GoldHelm
+8E Diamond
+8F Crystal
+90 Feather
+91 Tricorn
+92 Mitre
+93 Socklet
+94 Hairpin
+95 Ribbon
+96 Headband
+97 GrnBeret
+98 DarkHood
+99 Lamian
+9A Leather
+9B Bronze
+9C Iron
+9D Mithril
+9E Gold
+9F Diamond
+A0 Crystal
+A1 Copper
+A2 Training
+A3 Silver
+A4 Stealth
+A5 DiaPlate
+A6 DarkSuit
+A7 Cotton
+A8 SilkRobe
+A9 Earth
+AA Bard
+AB Lumina
+AC Black
+AD White
+AE Mirage
+AF Protect
+B0 Thief
+B1 Giant
+B2 Elf Cape
+B3 Cursed
+B4 Glasses
+B5 Hermes
+B6 Mithril
+B7 Silver
+B8 Diamond
+B9 Strength
+BA PwrWrist
+BB AngelGwn
+BC AngelRng
+BD FlameRng
+BE CoralRng
+BF BoneMail
+C0 Leather
+C1 KaiserKn
+C2 Gauntlet
+C3 TigrMask
+C4 Flame
+C5 ConagoJr
+C6 Genji
+C7 Genji
+C8 Genji
+C9 Genji
+CA WallRing
+CB Hypno
+CC Thornlet
+CD IceShld
+CE Bloodied
+CF Rainbow
+D0 RedShoes
+D1
+D2
+D3
+D4
+D5
+D6
+D7
+D8
+D9
+DA
+DB
+DC
+DD
+DE
+DF
+E0 Potion
+E1 HiPotion
+E2 Ether
+E3 Elixir
+E4 FenixDown
+E5 MaidnKiss
+E6 HolyWater
+E7 TurtlShell
+E8 Antidote
+E9 Eyedrop
+EA DragnFang
+EB DrkMatter
+EC Soft
+ED LuckMallet
+EE Dummy
+EF MagicLamp
+F0 Tent
+F1 Cottage
+F2 Giant
+F3 Power
+F4 Speed
+F5 Protect
+F6 Hero
+F7 DrgnCrest
+F8 OmegaMedl
+F9 Ramuh
+FA Catoblepa
+FB Golem
+FC FlameTech
+FD WaterTech
+FE BoltTech
+FF Efuefu

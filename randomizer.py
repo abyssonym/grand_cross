@@ -15,6 +15,22 @@ VERSION = 5
 ALL_OBJECTS = None
 
 
+NAMES_PATH = path.join(tblpath, "item_names.txt")
+ITEM_NAMES = {}
+with open(NAMES_PATH) as f:
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
+        while "  " in line:
+            line = line.replace("  ", " ")
+        if ' ' in line:
+            index, name = line.split(' ', 1)
+            index = int(index, 0x10)
+            assert index not in ITEM_NAMES
+            ITEM_NAMES[index] = name
+
+
 def shuffle_bits(value, size=8):
     numbits = bin(value).count("1")
     if numbits:
@@ -64,23 +80,6 @@ def item_is_buyable(value, magic=False):
             return True
     else:
         return False
-
-
-def get_item_similar_price(price=None):
-    shops = ShopObject.get_nonmagic_shops()
-
-    items = set([])
-    for s in shops:
-        items |= set(s.items)
-
-    items = [PriceObject.get(i) for i in items]
-    items = sorted(items, key=lambda i: (i.rank, i.signature))
-
-    newprice = mutate_normal(price, minimum=1, maximum=65000, wide=True,
-                             random_degree=TreasureObject.random_degree)
-    items = items[:1] + [i for i in items if i.price <= newprice]
-    chosen = items[-1]
-    return chosen.index
 
 
 class JobCrystalObject(TableObject):
@@ -330,8 +329,11 @@ class DropObject(TableObject):
                       "drop_common", "drop_rare"]:
             value = getattr(self, attr)
             if value > 0 and item_is_buyable(value):
-                price = PriceObject.get(value).rank
-                setattr(self, attr, get_item_similar_price(price))
+                candidates = [p for p in PriceObject.every
+                              if p.is_valid_treasure]
+                chosen = PriceObject.get(value).get_similar(candidates)
+                assert chosen.index < 0x100
+                setattr(self, attr, chosen.index)
 
         if random.choice([True, False]):
             if random.choice([True, False]):
@@ -347,13 +349,64 @@ class PriceObject(TableObject):
 
     mutate_attributes = {"significand": (1, 0xFF)}
 
+    BANNED_INDEXES = ([0x00, 0x01, 0xF7, 0xF8] +
+                      range(0x6F, 0x81) + range(0xD1, 0xE0))
+
     @cached_property
     def rank(self):
-        return self.price
+        if self.index in self.BANNED_INDEXES or self.index not in ITEM_NAMES:
+            return -1
+        elif self.is_event_only_item:
+            rank = max([p.price for p in PriceObject.every
+                        if not p.is_magic]) + 2
+        elif self.price <= 2:
+            rank = max([p.price for p in PriceObject.every
+                        if not p.is_magic]) + 1
+        else:
+            rank = self.price
+        return rank
+
+    @cached_property
+    def is_event_only_item(self):
+        if self.is_magic:
+            return False
+        for t in TreasureObject.every:
+            if t.is_item and t.value == self.index:
+                return False
+        for s in ShopObject.every:
+            if s.pretty_shop_type == "Magic":
+                continue
+            if self.index in s.items:
+                return False
+        for d in DropObject.every:
+            for attr in ["steal_common", "steal_rare",
+                          "drop_common", "drop_rare"]:
+                if getattr(d, attr) == self.index:
+                    return False
+        return True
+
+    @property
+    def name(self):
+        if self.index in ITEM_NAMES:
+            return ITEM_NAMES[self.index]
+        else:
+            return "%x" % self.index
 
     @property
     def price(self):
         return self.significand * (10**(self.exponent & 0x7))
+
+    @property
+    def is_magic(self):
+        return self.index > 0xFF
+
+    @property
+    def is_valid_treasure(self):
+        if self.is_magic:
+            return False
+        if self.rank <= 0:
+            return False
+        return True
 
     def cleanup(self):
         if (self.exponent & 7) >= 5:
@@ -423,6 +476,7 @@ class ShopObject(TableObject):
                 avg += len(items)
 
             all_items = [PriceObject.get(i) for i in all_items]
+            assert len(set([i.is_magic for i in all_items])) == 1
             all_items = sorted(all_items, key=lambda i: (i.rank, i.signature))
             done_items = set([])
             random.shuffle(shops)
@@ -515,15 +569,6 @@ class TreasureObject(TableObject):
     def is_gold(self):
         return not self.treasure_type & 0xE0
 
-    def cleanup(self):
-        assert self.x == self.old_data["x"]
-        assert self.y == self.old_data["y"]
-        if bin(self.treasure_type & 0xE0).count("1") > 1:
-            assert self.treasure_type == self.old_data["treasure_type"]
-            assert self.value == self.old_data["value"]
-        assert not ((self.is_monster and (self.is_item or self.is_gold))
-                    or (self.is_item and self.is_gold))
-
     def mutate(self):
         if not self.mutate_valid:
             return
@@ -533,9 +578,21 @@ class TreasureObject(TableObject):
             assert self.is_item
             assert not self.is_magic
             price = max(min(price, 65000), 1)
-            self.value = get_item_similar_price(price)
+            candidates = [p for p in PriceObject.every if p.is_valid_treasure]
+            chosen = PriceObject.get(self.value).get_similar(candidates)
+            assert chosen.index < 0x100
+            self.value = chosen.index
         else:  # gold
             assert self.is_gold
+
+    def cleanup(self):
+        assert self.x == self.old_data["x"]
+        assert self.y == self.old_data["y"]
+        if bin(self.treasure_type & 0xE0).count("1") > 1:
+            assert self.treasure_type == self.old_data["treasure_type"]
+            assert self.value == self.old_data["value"]
+        assert not ((self.is_monster and (self.is_item or self.is_gold))
+                    or (self.is_item and self.is_gold))
 
 
 class JobAbilityObject(TableObject):
