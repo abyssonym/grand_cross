@@ -1,0 +1,19 @@
+# objname tablefile address count grouped
+JobCrystalObject    job_crystal_table.txt       crystal_list_gba.txt
+MonsterObject       monster_table_gba.txt       14b2a8  512
+DropObject          drop_table_gba.txt          147fbc  512
+PriceObject         price_table_gba.txt         1561d4  260
+SpellPriceObject    spell_price_table_gba.txt   156ed4  128
+ShopObject          shop_table_gba.txt          1572fc  64
+TreasureObject      treasure_table_gba.txt      141ffe  337
+JobAbilityObject    job_ability_table_gba.txt   155484  25      pointed -8000000    4
+AbilityCountObject  ability_count_table.txt     14b1fc  25
+JobStatsObject      job_stats_table.txt         156e04  25
+JobEquipObject      job_equip_table.txt         156e6c  25
+JobCommandObject    job_command_table.txt       15616c  25
+JobInnatesObject    job_innates_table.txt       156138  25
+JobPaletteObject    job_palette_table_gba.txt   23edcc  125
+$rng                141ab8
+$freelancer         3d4f6e
+$mime               3ce4c5
+#$mime_abilities     115429

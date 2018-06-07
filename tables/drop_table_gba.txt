@@ -1,0 +1,4 @@
+steal_rare,2
+steal_common,2
+drop_rare,2
+drop_common,2

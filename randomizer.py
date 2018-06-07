@@ -178,6 +178,13 @@ class JobCrystalObject(TableObject):
                 chosen.crystal_index, freelancer.crystal_index)
         assert freelancer.has_fight_command
 
+    def cleanup(self):
+        if "GBA" in get_global_label() and self.is_freelancer:
+            knight = [jco for jco in JobCrystalObject.every
+                      if jco.crystal_index == 7][0]
+            knight.crystal_index = self.crystal_index
+            self.crystal_index = 7
+
 
 class MonsterObject(TableObject):
     flag = "m"
@@ -218,25 +225,31 @@ class MonsterObject(TableObject):
 
     @cached_property
     def rank(self):
+        if hasattr(self, "_rank"):
+            return self._rank
+
         BANNED_INDEXES = [0x150]
         if self.index in BANNED_INDEXES:
-            return -1
+            self._rank = -1
+            return self.rank
 
-        factors = [
-            "level",
-            "hp",
-            ["strength", "magic"],
-            ["defense", "magic_defense"],
-            ["evasion", "magic_evasion"],
-            ]
-        rank = 1
-        for factor in factors:
-            if not isinstance(factor, list):
-                factor = [factor]
-            factor = [getattr(self, attr) for attr in factor]
-            factor = max(factor + [1])
-            rank *= factor
-        return rank
+        for m in MonsterObject.every:
+            m._rank = -1
+
+        candidates = [m for m in MonsterObject.every
+                      if m.index not in BANNED_INDEXES and m.hp and m.level]
+        sorted_hp = sorted(candidates,
+                           key=lambda m: (m.hp, m.level, m.signature))
+        sorted_level = sorted(candidates,
+                           key=lambda m: (m.level, m.hp, m.signature))
+        candidates = sorted(candidates,
+            key=lambda m: (max(sorted_hp.index(m),
+                               sorted_level.index(m)), m.signature))
+
+        for m in candidates:
+            m._rank = candidates.index(m)
+
+        return self.rank
 
     @property
     def intershuffle_valid(self):
@@ -332,7 +345,6 @@ class DropObject(TableObject):
                 candidates = [p for p in PriceObject.every
                               if p.is_valid_treasure]
                 chosen = PriceObject.get(value).get_similar(candidates)
-                assert chosen.index < 0x100
                 setattr(self, attr, chosen.index)
 
         if random.choice([True, False]):
@@ -343,12 +355,34 @@ class DropObject(TableObject):
                 self.steal_rare, self.drop_rare = (self.drop_rare,
                                                    self.steal_rare)
 
-class PriceObject(TableObject):
+
+class PriceMixin(TableObject):
     flag = "p"
     custom_random_enable = True
 
-    mutate_attributes = {"significand": (1, 0xFF)}
+    @classproperty
+    def mutate_attributes(cls):
+        if hasattr(cls.every[0], "significand"):
+            return {"significand": (1, 0xFF)}
+        elif hasattr(cls.every[0], "price_value"):
+            return {"price_value": None}
 
+    @property
+    def price(self):
+        if hasattr(self, "exponent"):
+            return self.significand * (10**(self.exponent & 0x7))
+        else:
+            return self.price_value
+
+    def cleanup(self):
+        if hasattr(self, "exponent"):
+            if (self.exponent & 7) >= 5:
+                return
+            while self.price > 65000:
+                self.significand -= 1
+
+
+class PriceObject(PriceMixin):
     BANNED_INDEXES = ([0x00, 0x01, 0xF7, 0xF8] +
                       range(0x6F, 0x81) + range(0xD1, 0xE0))
 
@@ -357,19 +391,15 @@ class PriceObject(TableObject):
         if self.index in self.BANNED_INDEXES or self.index not in ITEM_NAMES:
             return -1
         elif self.is_event_only_item:
-            rank = max([p.price for p in PriceObject.every
-                        if not p.is_magic]) + 2
+            rank = max([p.price for p in PriceObject.every]) + 2
         elif self.price <= 2:
-            rank = max([p.price for p in PriceObject.every
-                        if not p.is_magic]) + 1
+            rank = max([p.price for p in PriceObject.every]) + 1
         else:
             rank = self.price
         return rank
 
     @cached_property
     def is_event_only_item(self):
-        if self.is_magic:
-            return False
         for t in TreasureObject.every:
             if t.is_item and t.value == self.index:
                 return False
@@ -393,26 +423,16 @@ class PriceObject(TableObject):
             return "%x" % self.index
 
     @property
-    def price(self):
-        return self.significand * (10**(self.exponent & 0x7))
-
-    @property
-    def is_magic(self):
-        return self.index > 0xFF
-
-    @property
     def is_valid_treasure(self):
-        if self.is_magic:
-            return False
         if self.rank <= 0:
             return False
         return True
 
-    def cleanup(self):
-        if (self.exponent & 7) >= 5:
-            return
-        while self.price > 65000:
-            self.significand -= 1
+
+class SpellPriceObject(PriceMixin):
+    @cached_property
+    def rank(self):
+        return self.price
 
 
 class ShopObject(TableObject):
@@ -423,7 +443,7 @@ class ShopObject(TableObject):
     @cached_property
     def rank(self):
         if self.shop_type == 0:
-            prices = [PriceObject.get(i+0x100).rank for i in self.items if i]
+            prices = [SpellPriceObject.get(i).rank for i in self.items if i]
         else:
             prices = [PriceObject.get(i).rank for i in self.items if i]
         if not prices:
@@ -475,8 +495,10 @@ class ShopObject(TableObject):
                 all_items |= set(items)
                 avg += len(items)
 
-            all_items = [PriceObject.get(i) for i in all_items]
-            assert len(set([i.is_magic for i in all_items])) == 1
+            if pretty_shop_type == "Magic":
+                all_items = [SpellPriceObject.get(i) for i in all_items]
+            else:
+                all_items = [PriceObject.get(i) for i in all_items]
             all_items = sorted(all_items, key=lambda i: (i.rank, i.signature))
             done_items = set([])
             random.shuffle(shops)
@@ -499,6 +521,8 @@ class ShopObject(TableObject):
                 s.items = chosen_items
 
     def cleanup(self):
+        if hasattr(self, "zero"):
+            assert self.zero == 0
         while len(self.items) < 8:
             self.items.append(0)
         assert len(self.items) == 8
@@ -532,7 +556,7 @@ class TreasureObject(TableObject):
         if not self.intershuffle_valid:
             return -1
         if self.is_magic:
-            price = PriceObject.get(self.value + 0x100).rank
+            price = SpellPriceObject.get(self.value).rank
         elif self.is_item:
             price = PriceObject.get(self.value).rank
         elif self.is_monster:
@@ -571,7 +595,6 @@ class TreasureObject(TableObject):
             price = max(min(price, 65000), 1)
             candidates = [p for p in PriceObject.every if p.is_valid_treasure]
             chosen = PriceObject.get(self.value).get_similar(candidates)
-            assert chosen.index < 0x100
             self.value = chosen.index
         else:  # gold
             assert self.is_gold
@@ -596,9 +619,10 @@ class JobAbilityObject(TableObject):
         if hasattr(cls, "_every"):
             return cls._every
         cls._every = super(JobAbilityObject, cls).every
-        mimic = JobAbilityObject(get_outfile(), addresses.mime_abilities,
-                                 index=99, groupindex=20)
-        cls._every.append(mimic)
+        if "GBA" not in get_global_label():
+            mimic = JobAbilityObject(get_outfile(), addresses.mime_abilities,
+                                     index=99, groupindex=20)
+            cls._every.append(mimic)
         return cls.every
 
     @cached_property
@@ -643,9 +667,10 @@ class AbilityCountObject(TableObject):
         return []
 
     def cleanup(self):
-        jao = JobAbilityObject.groups[self.index]
-        self.count = len(jao)
-        assert self.count <= 7
+        if self.index in JobAbilityObject.groups:
+            jao = JobAbilityObject.groups[self.index]
+            self.count = len(jao)
+            assert self.count <= 7
 
 
 class JobStatsObject(TableObject):
@@ -780,7 +805,8 @@ class JobCommandObject(TableObject):
 
 class JobInnatesObject(TableObject):
     def cleanup(self):
-        self.innates |= 0x8
+        if "GBA" not in get_global_label():
+            self.innates |= 0x8
         if "zerker" in get_activated_codes():
             self.innates |= 0x800
 
@@ -799,7 +825,10 @@ class JobPaletteObject(TableObject):
         # color9 - hair, shading
         # color10 - hair, highlight
         t = get_snes_palette_transformer(middle=True)
-        valid_color_indexes = [0, 6, 7] + range(11, 16)
+        if hasattr(self, "color19"):
+            valid_color_indexes = [0, 6, 7] + range(11, 20)
+        else:
+            valid_color_indexes = [0, 6, 7] + range(11, 16)
         colors = [getattr(self, "color%s" % i) for i in valid_color_indexes]
         newcolors = t(colors)
         for i, color in zip(valid_color_indexes, newcolors):
@@ -824,7 +853,8 @@ if __name__ == "__main__":
         minmax = lambda x: (min(x), max(x))
         randomize_rng()
         clean_and_write(ALL_OBJECTS)
-        rewrite_snes_meta("FF5-GC", VERSION, lorom=False)
+        if "GBA" not in get_global_label():
+            rewrite_snes_meta("FF5-GC", VERSION, lorom=False)
         finish_interface()
     except Exception, e:
         print "ERROR: %s" % e

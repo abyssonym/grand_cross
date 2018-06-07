@@ -2,11 +2,12 @@
 JobCrystalObject    job_crystal_table.txt       crystal_list.txt
 MonsterObject       monster_table.txt           100000  384
 DropObject          drop_table.txt              105000  384
-PriceObject         price_table.txt             112a00  384
+PriceObject         price_table.txt             112a00  256
+SpellPriceObject    price_table.txt             112c00  128
 ShopObject          shop_table.txt              112d40  64
 TreasureObject      treasure_table.txt          113210  252
 JobAbilityObject    job_ability_table.txt       1152c0  21      pointed 110000  2
-AbilityCountObject  ability_count_table.txt     1152ea  21
+AbilityCountObject  ability_count_table.txt     1152ea  22
 JobStatsObject      job_stats_table.txt         1156b0  22
 JobEquipObject      job_equip_table.txt         115708  22
 JobCommandObject    job_command_table.txt       115760  22

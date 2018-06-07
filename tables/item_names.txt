@@ -254,3 +254,7 @@ FC FlameTech
 FD WaterTech
 FE BoltTech
 FF Efuefu
+100 Buckshot
+101 Blastshot
+102 Blitzshot
+103 ?????

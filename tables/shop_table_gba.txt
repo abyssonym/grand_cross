@@ -1,0 +1,3 @@
+shop_type,2
+items,8x2,list
+zero,2
