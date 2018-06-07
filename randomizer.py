@@ -513,14 +513,14 @@ class TreasureObject(TableObject):
 
     @property
     def intershuffle_valid(self):
+        if self.is_monster:
+            return "miab" in get_activated_codes()
         if self.treasure_type & 0x18:
             return False
         if self.is_gold and self.treasure_type & 0x7 > 4:
             return False
         if bin(self.treasure_type & 0xE0).count("1") > 1:
             return False
-        if self.is_monster:
-            return "miab" in get_activated_codes()
         if not self.is_gold and self.treasure_type & 0x7:
             return False
         return True
@@ -547,6 +547,9 @@ class TreasureObject(TableObject):
             price = PriceObject.get(self.value + 0x100).rank
         elif self.is_item:
             price = PriceObject.get(self.value).rank
+        elif self.is_monster:
+            return random.randint(0, max(i.rank for i in PriceObject.every
+                                         if not i.is_magic))
         else:
             price = self.value * (10**(self.treasure_type & 0x7))
         if not self.mutate_valid and not self.is_magic:
@@ -588,9 +591,6 @@ class TreasureObject(TableObject):
     def cleanup(self):
         assert self.x == self.old_data["x"]
         assert self.y == self.old_data["y"]
-        if bin(self.treasure_type & 0xE0).count("1") > 1:
-            assert self.treasure_type == self.old_data["treasure_type"]
-            assert self.value == self.old_data["value"]
         assert not ((self.is_monster and (self.is_item or self.is_gold))
                     or (self.is_item and self.is_gold))
 
