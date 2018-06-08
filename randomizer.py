@@ -201,8 +201,8 @@ class MonsterObject(TableObject):
     magic_mutate_bit_attributes = {
         ("elemental_immunities", "absorptions", "weaknesses"): (
             0xFF, 0xFF, 0xFF),
-        ("status_immunities", "status"): (0xFCFFFF, 0xFCFFFF),
-        ("cant_evade", "command_immunity"): (0xFF, 0x98),
+        ("status_immunities", "status", "cant_evade", "command_immunity",
+            "creature_type"): (0xFCFFFF, 0xFCFFFF, 0xFF, 0x98, 0xFF),
         }
 
     @property
