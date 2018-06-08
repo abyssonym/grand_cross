@@ -222,6 +222,7 @@ class MonsterObject(TableObject):
             return self.rank
 
         for m in MonsterObject.every:
+            m.is_boss
             m._rank = -1
 
         candidates = [m for m in MonsterObject.every
@@ -251,7 +252,7 @@ class MonsterObject(TableObject):
     def mutate_valid(self):
         return self.rank > 0
 
-    @property
+    @cached_property
     def is_boss(self):
         return self.get_bit("heavy") or (
             self.get_bit("control") and self.get_bit("catch"))
