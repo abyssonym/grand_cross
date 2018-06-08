@@ -70,18 +70,6 @@ def randomize_rng():
     f.close()
 
 
-def item_is_buyable(value, magic=False):
-    if magic:
-        shops = ShopObject.get_magic_shops()
-    else:
-        shops = ShopObject.get_nonmagic_shops()
-    for s in shops:
-        if value in s.items:
-            return True
-    else:
-        return False
-
-
 class JobCrystalObject(TableObject):
     flag = "y"
     flag_description = "jobs obtained from crystal shards"
@@ -341,7 +329,7 @@ class DropObject(TableObject):
         for attr in ["steal_common", "steal_rare",
                       "drop_common", "drop_rare"]:
             value = getattr(self, attr)
-            if value > 0 and item_is_buyable(value):
+            if value > 0 and PriceObject.get(value).rank >= 0:
                 candidates = [p for p in PriceObject.every
                               if p.is_valid_treasure]
                 chosen = PriceObject.get(value).get_similar(candidates)
