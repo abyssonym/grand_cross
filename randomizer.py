@@ -194,7 +194,7 @@ class MonsterObject(TableObject):
         "gp": (1, 65535),
         }
     randomselect_attributes = [
-        "agility", "evasion", "defense",
+        "agility", "strength", "attack_multiplier", "evasion", "defense",
         "magic_defense", "magic_evasion", "hp", "mp", "xp", "gp",
         "level",
         ]
