@@ -347,13 +347,9 @@ class DropObject(TableObject):
                 chosen = PriceObject.get(value).get_similar(candidates)
                 setattr(self, attr, chosen.index)
 
-        if random.choice([True, False]):
-            if random.choice([True, False]):
-                self.steal_common, self.drop_common = (self.drop_common,
-                                                       self.steal_common)
-            if random.choice([True, False]):
-                self.steal_rare, self.drop_rare = (self.drop_rare,
-                                                   self.steal_rare)
+        if random.random() < self.random_degree:
+            self.steal_rare, self.drop_rare = (self.drop_rare,
+                                               self.steal_rare)
 
 
 class PriceMixin(TableObject):
