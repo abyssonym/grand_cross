@@ -8,7 +8,7 @@ from randomtools.interface import (
     get_outfile, get_seed, get_flags, get_activated_codes,
     run_interface, rewrite_snes_meta, clean_and_write, finish_interface)
 from collections import defaultdict
-from os import path
+from os import path, remove
 
 
 VERSION = 6
@@ -104,6 +104,8 @@ class JobCrystalObject(TableObject):
 
     @property
     def name(self):
+        if 'GBA' not in get_global_label() and self.job_index >= 20:
+            return JOB_NAMES[self.job_index+4]
         return JOB_NAMES[self.job_index]
 
     @property
@@ -207,8 +209,9 @@ class JobCrystalObject(TableObject):
     def cleanup(self):
         if "GBA" in get_global_label() and self.is_freelancer:
             knight = [jco for jco in JobCrystalObject.every
-                      if jco.crystal_index == 7][0]
-            knight.crystal_index = self.crystal_index
+                      if jco.crystal_index == 7]
+            if knight:
+                knight[0].crystal_index = self.crystal_index
             self.crystal_index = 7
 
 
@@ -869,6 +872,90 @@ class JobPaletteObject(TableObject):
             setattr(self, "color%s" % i, color)
 
 
+def do_fiesta():
+    print "Please enter a number to choose an option:"
+    print "1. Choose my own jobs."
+    print "2. Randomize my jobs."
+
+    while True:
+        x = int(raw_input("? "))
+        if x in [1, 2]:
+            break
+
+    print
+    if x == 1:
+        print "JOB LIST"
+        namestrs = ["{0:>2}. {1}".format(jco.job_index+1, jco.name)
+                    for jco in
+                    sorted(JobCrystalObject.every, key=lambda j: j.job_index)]
+        maxlen = max(map(len, namestrs))+2
+        num_per_row = 79 / maxlen
+        num_rows = len(namestrs) / float(num_per_row)
+        if num_rows != int(num_rows):
+            num_rows += 1
+        num_rows = int(num_rows)
+        ss = ["" for _ in xrange(int(num_rows))]
+        while namestrs:
+            namestr = namestrs.pop(0)
+            s = ss.pop(0)
+            s += ("{0:%s}" % maxlen).format(namestr)
+            ss.append(s)
+        for s in sorted(ss):
+            print s
+        print
+        chosen_jobs = []
+        for element in ["Wind", "Water", "Fire", "Earth"]:
+            while True:
+                x = raw_input("%s job? " % element)
+                try:
+                    x = int(x) - 1
+                    assert x >= 0
+                    x = [jco for jco in JobCrystalObject.every
+                         if jco.job_index == x][0]
+                    chosen_jobs.append(x)
+                    break
+                except:
+                    pass
+        print "Your chosen jobs are: " + ", ".join(
+            jco.name for jco in chosen_jobs)
+        print
+    else:
+        JobCrystalObject.class_reseed("fiesta1")
+        fight_jobs = [jco for jco in JobCrystalObject.every
+                      if jco.has_fight_command and jco.job_abilities]
+        wind_job = random.choice(fight_jobs)
+        candidates = [jco for jco in JobCrystalObject.every
+                      if jco.job_abilities and jco is not wind_job]
+        chosen_jobs = [wind_job] + random.sample(candidates, 3)
+
+    assert len(set(chosen_jobs)) == 4
+    JobCrystalObject.class_reseed("fiesta2")
+
+    crystal_indexes = [jco.crystal_index for jco in chosen_jobs]
+    for jco in JobCrystalObject.every:
+        if jco.rank <= 2:
+            jco.crystal_index = crystal_indexes[0]
+        elif jco.rank <= 3:
+            jco.crystal_index = crystal_indexes[1]
+        elif jco.rank <= 5:
+            jco.crystal_index = crystal_indexes[2]
+        else:
+            jco.crystal_index = crystal_indexes[3]
+
+    NONELEMENTAL_SKILLS = [0x8, 0xc, 0xd, 0xe, 0x11, 0x12, 0x13, 0x15, 0x16,
+                           0x17, 0x18, 0x2a, 0x2b, 0x5f, 0x61, 0x62, 0x90]
+    ability_indexes = [a.ability for jco in chosen_jobs
+                       for a in jco.job_abilities]
+    if not set(ability_indexes) & set(NONELEMENTAL_SKILLS):
+        print ("WARNING! These jobs will not learn a "
+               "reliable source of non-elemental damage.")
+        print("At least one of them has the Fight skill.")
+        x = raw_input("Are you sure you want to continue? (y/n) ")
+        if x and x.lower()[0] == 'n':
+            remove(get_outfile())
+            exit(0)
+
+
 if __name__ == "__main__":
     try:
         print ('You are using the FF5 "Grand Cross" '
@@ -880,6 +967,7 @@ if __name__ == "__main__":
         codes = {"zerker": ["zerker"],
                  "miab": ["miab"],
                  "fight": ["fight"],
+                 "fiesta": ["fiesta"],
                 }
 
         run_interface(ALL_OBJECTS, snes=True, codes=codes, custom_degree=True)
@@ -887,6 +975,9 @@ if __name__ == "__main__":
         for code in codes:
             if code in get_activated_codes():
                 print "%s CODE ACTIVATED." % code.upper()
+
+        if "fiesta" in get_activated_codes():
+            do_fiesta()
 
         hexify = lambda x: "{0:0>2}".format("%x" % x)
         numify = lambda x: "{0: >3}".format(x)
