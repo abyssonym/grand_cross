@@ -835,6 +835,11 @@ class JobCommandObject(TableObject):
                 cleaned_commands[3] = cleaned_commands[2]
                 cleaned_commands[2] = 0
             self.commands = cleaned_commands
+
+        for i, c in enumerate(self.commands):
+            if c in [0x25]:
+                self.commands[i] = self.old_data["commands"][i]
+
         assert len(self.commands) == 4
         assert self.commands[2] == 0
         assert self.commands[0] > 0
