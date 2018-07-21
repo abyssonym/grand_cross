@@ -749,7 +749,10 @@ class JobCommandObject(TableObject):
         for i, ability in enumerate(self.commands):
             if not candidates:
                 break
-            if ability > 0 and random.random() <= (self.random_degree ** 0.75):
+            if "fight" in get_activated_codes() and ability == 5:
+                pass
+            elif ability > 0 and random.random() <= (
+                    self.random_degree ** 0.75):
                 new_command = random.choice(candidates)
                 if new_command in self.commands:
                     continue
@@ -830,9 +833,15 @@ if __name__ == "__main__":
 
         codes = {"zerker": ["zerker"],
                  "miab": ["miab"],
+                 "fight": ["fight"],
                 }
 
         run_interface(ALL_OBJECTS, snes=True, codes=codes, custom_degree=True)
+
+        for code in codes:
+            if code in get_activated_codes():
+                print "%s CODE ACTIVATED." % code.upper()
+
         hexify = lambda x: "{0:0>2}".format("%x" % x)
         numify = lambda x: "{0: >3}".format(x)
         minmax = lambda x: (min(x), max(x))
