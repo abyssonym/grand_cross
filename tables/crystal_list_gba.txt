@@ -20,3 +20,7 @@
 3d1553 timemage
 3d155f summoner
 3ce4c5 mime
+3e2a62 18
+3e2a46 19
+3e2a7e 1a
+3e4517 1b-necromancer

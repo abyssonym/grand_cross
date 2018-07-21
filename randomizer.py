@@ -16,7 +16,9 @@ ALL_OBJECTS = None
 
 
 NAMES_PATH = path.join(tblpath, "item_names.txt")
-ITEM_NAMES = {}
+JOB_NAMES_PATH = path.join(tblpath, "job_names.txt")
+ITEM_NAMES, JOB_NAMES  = {}, []
+
 with open(NAMES_PATH) as f:
     for line in f:
         line = line.strip()
@@ -29,6 +31,13 @@ with open(NAMES_PATH) as f:
             index = int(index, 0x10)
             assert index not in ITEM_NAMES
             ITEM_NAMES[index] = name
+
+with open(JOB_NAMES_PATH) as f:
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
+        JOB_NAMES.append(line)
 
 
 def shuffle_bits(value, size=8):
@@ -81,7 +90,21 @@ class JobCrystalObject(TableObject):
 
     @classmethod
     def map_crystal_job(cls, value):
+        if "GBA" in get_global_label():
+            try:
+                return {27: 20,
+                        26: 21,
+                        25: 22,
+                        24: 23,
+                        19: 24,
+                        18: 25}[value]
+            except KeyError:
+                pass
         return (7-(value%8)) + ((value/8)*8)
+
+    @property
+    def name(self):
+        return JOB_NAMES[self.job_index]
 
     @property
     def job_index(self):
@@ -104,10 +127,18 @@ class JobCrystalObject(TableObject):
         return not self.is_mime
 
     @property
+    def job_abilities(self):
+        try:
+            jaos = JobAbilityObject.groups[self.job_index]
+        except KeyError:
+            jaos = []
+        return jaos
+
+    @property
     def ability_ap_rank(self):
-        if self.is_freelancer:
+        jaos = self.job_abilities
+        if not jaos:
             return 0
-        jaos = JobAbilityObject.groups[self.job_index]
         rank = sum([jao.ap for jao in jaos]) / float(len(jaos))
         return rank
 
@@ -125,8 +156,12 @@ class JobCrystalObject(TableObject):
             return 5
         elif self.index <= 20:
             return 3
-        elif self.index == 21:
+        elif self.index <= 21:
             return 7
+        elif self.index <= 24:
+            return 8
+        elif self.index == 25:
+            return 9
         raise Exception("Unknown index.")
 
     @classmethod
@@ -153,7 +188,10 @@ class JobCrystalObject(TableObject):
 
         candidates = sorted(
             shuffled, key=lambda jco: (jco.rank, jco.signature))
-        assert len(candidates) == len(shuffled) == 21
+        if 'GBA' not in get_global_label():
+            assert len(candidates) == len(shuffled) == 21
+        else:
+            assert len(candidates) == len(shuffled) == 25
         for c, s in zip(candidates, shuffled):
             c.crystal_index = s.old_data["crystal_index"]
 
@@ -599,15 +637,23 @@ class JobAbilityObject(TableObject):
     mutate_attributes = {"ap": (1, 999)}
     intershuffle_attributes = ["ap"]
 
+    @property
+    def name(self):
+        try:
+            return JOB_NAMES[self.index]
+        except IndexError:
+            return "%x" % self.index
+
     @classproperty
     def every(cls):
         if hasattr(cls, "_every"):
             return cls._every
         cls._every = super(JobAbilityObject, cls).every
-        if "GBA" not in get_global_label():
-            mimic = JobAbilityObject(get_outfile(), addresses.mime_abilities,
-                                     index=99, groupindex=20)
-            cls._every.append(mimic)
+        mimic = JobAbilityObject(
+            get_outfile(), addresses.mime_abilities,
+            index=len(JobAbilityObject.every),
+            groupindex=max(JobAbilityObject.groups)+1)
+        cls._every.append(mimic)
         return cls.every
 
     @cached_property
@@ -847,6 +893,7 @@ if __name__ == "__main__":
         minmax = lambda x: (min(x), max(x))
         randomize_rng()
         clean_and_write(ALL_OBJECTS)
+
         if "GBA" not in get_global_label():
             rewrite_snes_meta("FF5-GC", VERSION, lorom=False)
         finish_interface()
