@@ -257,7 +257,10 @@ class MonsterObject(TableObject):
         if hasattr(self, "_rank"):
             return self._rank
 
-        BANNED_INDEXES = [0x150]
+        if 'GBA' in get_global_label():
+            BANNED_INDEXES = [0x50]
+        else:
+            BANNED_INDEXES = [0x150]
         if self.index in BANNED_INDEXES:
             self._rank = -1
             return self.rank
